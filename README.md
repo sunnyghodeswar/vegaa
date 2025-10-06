@@ -1,224 +1,241 @@
 # ⚡ **Vegaa**
-
 > **Named for velocity. Engineered for developers.**
 
-Next-gen, high-performance Node.js framework built for speed and simplicity.
+A modern Node.js framework with automatic parameter injection — delivering Express-level simplicity with Fastify-level speed.
 
 ---
 
-🚧 **Status:** *Currently in active development (v0.0.1-dev).*  
-> This is an **early developer preview** — not production-ready yet.  
-> Expect rapid updates, API refinements, and potential breaking changes before v1.0 release.
+🚧 **Status:** *Developer Preview (v0.2.1)*  
+> Core engine stable. APIs finalized for routing, middleware, and cluster modules. Production release coming soon.
 
 ---
 
-## 🚀 Why Vegaa?
+## What is Vegaa?
 
-Vegaa is a modern Node.js web framework built from scratch — engineered for **extreme performance**, **zero boilerplate**, and **maximum developer happiness**.
+> Vegaa enters a mature ecosystem (Express, Fastify, Hono...), but focuses on one radical goal — *less boilerplate, more intent*.
 
-It combines the **speed of Fastify**, the **simplicity of Express**, and adds a **touch of modern DX magic**.
+Vegaa eliminates boilerplate through **context-based parameter injection**.
+
+Middleware functions return objects that become available to subsequent middleware and route handlers — automatically injected by matching parameter names.
+
+**Traditional approach:**
+```js
+app.get('/user/:id', (req, res) => {
+  const user = req.user
+  const id = req.params.id
+  res.json({ user, id })
+})
+```
+
+**Vegaa approach:**
+```js
+route('/user/:id').get((user, params) => ({
+  user,
+  id: params.id
+}))
+```
+
+No manual extraction. No context juggling. Just declare what you need.
 
 ---
 
-## 🔑 Core Features
+## Core Features
 
-✅ **Blazing Fast** — Built directly on Node's native HTTP layer with zero overhead  
-✅ **Cluster Mode** — Utilizes all CPU cores automatically for high concurrency  
-✅ **Smart Middleware System** — Simple, async, and context-aware  
-✅ **Built-in Plugins** — CORS, JSON parser, body parser — ready to go  
-✅ **Cache-Aware Routes** — Define TTLs for routes with a single line  
-✅ **Dynamic Routing** — Supports params (`/movie/:id`) and wildcards (`/files/*`)  
-✅ **TypeScript First** — Fully typed with clean developer ergonomics  
-✅ **Decorators & Hooks** — Extend Vegaa elegantly without monkey-patching
+- **Context-based injection** — Middleware returns objects; handlers receive them as parameters
+- **Composable architecture** — Built on `undici`, `find-my-way`, and `fast-json-stringify`
+- **Cluster-ready** — Multi-core scaling with one flag
+- **TypeScript-native** — Full type inference and IntelliSense
+- **Zero-config plugins** — CORS, JSON, body parsing enabled by default
 
 ---
 
-## 🧱 Installation
+## Installation
 
 ```bash
 npm install vegaa
 ```
 
-or for the latest dev preview:
+---
 
-```bash
-npm install vegaa@dev
+## Quick Start
+
+```js
+import { vegaa, route } from 'vegaa'
+
+route('/ping').get(() => ({ msg: 'pong' }))
+
+await vegaa.startVegaaServer()
 ```
+
+Runs on `http://localhost:4000` by default.
 
 ---
 
-## 🧩 Minimal Example
+## How Context Injection Works
+
+Each middleware can **return an object**. Those values become available to all subsequent middleware and route handlers through parameter injection:
 
 ```js
-import { createApp } from 'vegaa'
+// Middleware returns objects → added to context
+vegaa.middleware([
+  async () => ({ user: { id: 1, name: 'Sunny' } }),
+  async (user) => ({ greeting: `Hello ${user.name}` }),
+  async (user, greeting) => ({ log: `${greeting} [${user.id}]` })
+])
 
-const app = createApp()
-
-app('/').get(() => ({ msg: 'Hello Vegaa 🚀' }))
-
-app.startServer()
-```
-
-Output:
-```bash
-🚀 Vegaa listening on port 4000 (pid 12345)
-```
-
-**That's it.** No boilerplate. No config files. Just code.
-
-### 🎯 What You Get Out of the Box
-
-- **Default Port:** `4000` (configurable via `{ port: 3000 }`)
-- **Auto-enabled Plugins:** CORS, JSON parser, body parser (pre-configured)
-- **Cluster Mode:** Set `CLUSTER=true` env variable to utilize all CPU cores
-- **Built-in Features:** Route caching, middleware support, decorators, and hooks — all ready to use
-
----
-
-## ⚙️ Complete Example
-
-```js
-import { createApp, corsPlugin, jsonPlugin, bodyParserPlugin } from 'vegaa'
-
-const app = createApp()
-
-// 🔌 Register plugins
-await app.plugin(corsPlugin)
-await app.plugin(jsonPlugin)
-await app.plugin(bodyParserPlugin, { limit: '2mb' })
-
-// 🌍 Global middleware
-app.middleware(() => ({
-  user: { id: 1, name: 'Alex' }
+// Route handler receives injected parameters
+route('/welcome').get((user, greeting, log) => ({
+  message: greeting,
+  userId: user.id,
+  log
 }))
-
-// ⚡ Routes
-app('/api/speed')
-  .get((user) => ({ 
-    msg: `⚡ Speed check for ${user?.name}`,
-    metrics: {
-      latency: '< 1ms',
-      throughput: '100k req/s',
-      status: 'blazing fast'
-    }
-  }))
-  .post((body, user) => ({
-    msg: '🚀 Performance test initiated',
-    testData: body,
-    initiatedBy: user,
-    eta: 'instant'
-  }))
-
-// 🚀 Start server
-await app.startServer({ port: 4000 })
 ```
 
-Output:
-```bash
-🚀 Vegaa listening on port 4000 (pid 12345)
-```
+**How it works:**
+1. First middleware returns `{ user }`
+2. Second middleware receives `user`, returns `{ greeting }`
+3. Third middleware receives both, returns `{ log }`
+4. Route handler receives all three — automatically
+
+No manual wiring. Vegaa matches parameter names to context values. Full TypeScript inference ensures all injected parameters are strongly typed in editors.
 
 ---
 
-## 🔥 Example Routes
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `/ping` | GET | Health check |
-| `/api/speed/:test` | GET | Performance metrics by test ID |
-| `/api/benchmark` | POST | Run speed benchmark |
-| `/files/*` | GET | Wildcard file route |
-| `/api/status` | GET | Cached route example |
-
----
-
-## 🧩 Middleware Magic
-
-Middleware in Vegaa is *simple and expressive*:
+## Route-Specific Middleware
 
 ```js
-// Global middleware
-app.middleware((res) => {
-  res.setHeader('X-Powered-By', 'Vegaa')
-})
-
-// Route-level middleware with context
-app('/secure')
-  .middleware((user) => {
-    if (!user) throw new Error('Unauthorized')
+route('/admin/:id')
+  .middleware((params) => {
+    if (params.id !== '1') throw new Error('Unauthorized')
+    return { access: 'granted' }
   })
-  .get((user, res) => {
-    res.json({ msg: `Welcome ${user.name}` })
-  })
+  .get((params, access) => ({ 
+    id: params.id,
+    access
+  }))
 ```
+
+Route middleware runs after global middleware. All returned objects merge into context.
 
 ---
 
-## 🧰 Plugins
-
-Vegaa supports plugin-style extensions — built just like Fastify or Hono.
-
-Example:
+## Real-World Example (Auth + DB + Params)
 
 ```js
-export const myPlugin = {
+route('/profile/:id')
+  .middleware(async () => ({ user: await auth() }))
+  .middleware(async (user, params) => ({ profile: await db.getUser(params.id) }))
+  .get((user, profile) => ({
+    viewer: user.name,
+    viewing: profile.name
+  }))
+```
+
+No `req.user`, no `req.params`, no manual context passing. Just clean function composition.
+
+---
+
+## Performance
+
+Tested on MacBook M3, macOS 26 (Tahoe) beta, Node v24.3  
+`autocannon -c 100 -d 300 http://localhost:4000/ping`
+
+| Framework | Req/s | Latency (ms) | Mode |
+|-----------|-------|--------------|------|
+| **Vegaa (Cluster)** | **72,783** | **1.06** | Multi-core |
+| **Vegaa (Single)** | **70,751** | **1.02** | Single-core |
+| Fastify | 69,078 | 1.02 | Single-core |
+| Express | 66,882 | 1.03 | Single-core |
+
+Vegaa performs comparably to Fastify while delivering cleaner syntax through parameter injection.
+
+---
+
+## Architecture
+
+Vegaa is built on battle-tested Node.js primitives:
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **HTTP Ingress** | Node `http` | Zero-overhead request handling |
+| **HTTP Egress** | `undici` | Official Node.js HTTP client (2-3x faster) |
+| **Routing** | `find-my-way` | Fastify's trie router (O(log n) lookup) |
+| **Serialization** | `fast-json-stringify` | Schema-based JSON (2-3x faster) |
+| **Innovation** | **Parameter injection** | Context-based handler composition |
+
+The performance comes from proven components. The developer experience comes from how they're composed.
+
+---
+
+## Plugins
+
+```js
+const loggerPlugin = {
   name: 'logger',
   version: '1.0.0',
   async register(app) {
-    app.middleware((req) => console.log('Incoming:', req.url))
+    app.middleware((pathname) => {
+      console.log('→', pathname)
+    })
   }
 }
 
-await app.plugin(myPlugin)
+await vegaa.plugin(loggerPlugin)
+```
+
+**Default plugins** (CORS, JSON, body parser) are pre-registered and can be customized:
+
+```js
+await vegaa.plugin(corsPlugin, { 
+  origin: 'https://example.com' 
+})
 ```
 
 ---
 
-## ⚡ Advanced Features (Built-in)
+## Decorators
 
-| Feature | Description |
-|----------|--------------|
-| 🧩 **`app.decorate()`** | Extend the app with custom properties or methods |
-| 🧱 **`app.plugin()`** | Register plugins (async supported) |
-| 🌀 **Cluster Mode** | Enable multi-core scaling with `CLUSTER=true` |
-| 🚀 **Smart Context** | Handler params auto-mapped: `(body, res, query)` etc. |
-| 💾 **Cache TTL** | Route-level caching with `{ cacheTTL: 5000 }` |
-| 🧠 **Hooks** | `onRequest`, `onResponse`, `onError` available (internal use) |
+```js
+vegaa.decorate('version', '0.2.1')
+
+route('/info').get((version) => ({ version }))
+```
 
 ---
 
-## ⚡ Performance Comparison (5s, 100 Connections)
+## Cluster Mode
 
-| Framework | Avg Req/s | Avg Latency (ms) | Throughput (MB/s) | Mode |
-|------------|------------|------------------|-------------------|------|
-| **Vegaa (Cluster)** | **115,885** | **0.10** | **21.4 MB/s** | Multi-core |
-| **Vegaa (Single-Core)** | 83,200 | 1.02 | 15.4 MB/s | Single-core |
-| **Fastify** | 75,000 | 1.03 | 15.5 MB/s | Single-core |
-| **Express** | 55,500 | 1.07 | 14.9 MB/s | Single-core |
+```js
+await vegaa.startVegaaServer({ cluster: true })
+```
 
-> Vegaa outperformed both Fastify and Express, achieving up to **2× the throughput** of Express  
-> and **~40% faster response times** under the same load conditions.
+Automatically spawns workers for each CPU core with graceful restart on crashes.
 
 ---
 
-## 🧑‍💻 Author
+## Roadmap
 
-Created by **Sunny Ghodeswar** | Pune, India 🇮🇳
+**Phase 1 – Core Engine** ✅  
+Context system, middleware composition, cluster orchestration, plugin architecture
+
+**Phase 2 – Developer Tools** 🚧  
+Static files, CLI, rate limiting, request validation, caching
+
+**Phase 3 – Scale & Real-Time** 🧠  
+WebSockets, Redis integration, streaming API, advanced auth
 
 ---
 
-## 🗺️ Roadmap
+## Author
 
-**Phase 1 – Core Engine** ✅ Completed  
-**Phase 2 – Developer Power-Ups** 🚧 In Progress (rate limiter, static files, CLI tools)  
-**Phase 3 – Scale & Real-Time** 🧠 Planned (WebSockets, Redis, Auth, config system)
+Built by [Sunny](https://github.com/yourusername)
 
 ---
 
-## ⚖️ License
+## License
 
 [MIT](LICENSE)
 
 ---
 
-> *"Named for velocity. Engineered for developers ⚡"*
+> **Named for velocity. Engineered for developers.** ⚡
