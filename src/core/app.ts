@@ -76,16 +76,17 @@ export class App {
   // -------------------------------
   // DECORATORS
   // -------------------------------
-  public decorate<K extends string, V>(
-    this: App, // 👈 Required for TS strict mode
-    key: K,
-    value: V
-  ): asserts this is this & Record<K, V> {
-    if (!key || typeof key !== 'string') throw new TypeError('decorate() requires a string key')
-    const self = this as Record<string, unknown>
-    if (self[key] !== undefined) throw new Error(`Property "${key}" already exists on app`)
-    self[key] = value
-  }
+public decorate<K extends string, V>(key: K, value: V): void {
+  if (!key || typeof key !== 'string') throw new TypeError('decorate requires string key')
+
+  // safely cast `this` to any only for assignment
+  const self = this as unknown as Record<string, unknown>
+
+  if (key in self)
+    throw new Error(`Property "${key}" already exists on app`)
+
+  self[key] = value
+}
 
   // -------------------------------
   // ROUTE REGISTRATION
