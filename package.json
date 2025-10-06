@@ -1,6 +1,6 @@
 {
   "name": "vegaa",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "🔥 Vegaa — A lightning-fast, zero-boilerplate Node.js framework focused on speed, scalability, and pure developer joy.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
