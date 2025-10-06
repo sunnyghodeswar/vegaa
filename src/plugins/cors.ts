@@ -1,4 +1,4 @@
-import { Handler, Context } from '../core/types'
+import type { Handler } from '../core/types'
 
 export type CorsOptions = {
   origin?: string | ((reqOrigin?: string) => string | undefined)
@@ -18,19 +18,14 @@ const DEFAULTS: Required<CorsOptions> = {
 
 export function corsMiddleware(opts?: CorsOptions): Handler {
   const conf = { ...DEFAULTS, ...(opts ?? {}) }
-
-  return async (ctx: Context) => {
+  return async (ctx: any) => {
     const reqOrigin = (ctx.req.headers['origin'] as string) || ''
-    let originHeader: string
-    if (typeof conf.origin === 'function') originHeader = conf.origin(reqOrigin) ?? ''
-    else originHeader = conf.origin
-
+    const originHeader = typeof conf.origin === 'function' ? conf.origin(reqOrigin) ?? '' : conf.origin
     if (originHeader) ctx.res.setHeader('Access-Control-Allow-Origin', originHeader)
     ctx.res.setHeader('Access-Control-Allow-Methods', conf.methods)
     ctx.res.setHeader('Access-Control-Allow-Headers', conf.allowedHeaders)
     if (conf.allowCredentials) ctx.res.setHeader('Access-Control-Allow-Credentials', 'true')
     if (typeof conf.maxAge === 'number' && conf.maxAge > 0) ctx.res.setHeader('Access-Control-Max-Age', String(conf.maxAge))
-
     if ((ctx.req.method || '').toUpperCase() === 'OPTIONS') {
       ctx.res.statusCode = 204
       ctx._ended = true
@@ -40,7 +35,9 @@ export function corsMiddleware(opts?: CorsOptions): Handler {
 }
 
 export const corsPlugin = {
-  register: async (app: any) => {
-    app.middleware(corsMiddleware())
+  name: 'cors',
+  version: '1.0.0',
+  register(app: any, opts?: CorsOptions) {
+    app.middleware(corsMiddleware(opts))
   }
 }

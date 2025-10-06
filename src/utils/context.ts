@@ -1,25 +1,36 @@
+/**
+ * buildContext.ts
+ *
+ * Builds a lightweight Context object for each request.
+ * Attaches minimal response helpers (status/type/json/send) directly on res.
+ *
+ * Performance philosophy:
+ *  - Avoid double-reading request streams.
+ *  - Let the bodyParser middleware handle request bodies.
+ *  - Context remains lightweight — only basic URL parsing & helpers.
+ */
+
 import http from 'http'
 import { URL } from 'url'
-import { Context } from '../core/types'
+import type { Context, EnhancedServerResponse } from '../core/types'
 
-/**
- * Reads raw request body as string.
- * Optimized for small payloads, uses minimal buffering.
- */
 export async function readBody(req: http.IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = ''
-    req.on('data', (chunk) => (body += chunk))
+    req.on('data', (chunk: Buffer | string) => (body += chunk))
     req.on('end', () => resolve(body))
     req.on('error', (err) => reject(err))
   })
 }
 
 /**
- * Builds the request context (ctx) object used throughout VegaJS.
- * Contains req/res plus pre-parsed body, query, pathname, and helper methods.
+ * Build per-request context.
+ * Minimal parsing — no JSON parsing here (delegated to bodyParser middleware).
  */
-export async function buildContext(req: http.IncomingMessage, res: http.ServerResponse): Promise<Context> {
+export async function buildContext(
+  req: http.IncomingMessage,
+  res: http.ServerResponse
+): Promise<Context> {
   const host = req.headers.host ?? 'localhost'
   const rawUrl = req.url ?? '/'
   const url = new URL(rawUrl, `http://${host}`)
@@ -27,59 +38,66 @@ export async function buildContext(req: http.IncomingMessage, res: http.ServerRe
   const query: Record<string, string> = {}
   url.searchParams.forEach((v, k) => (query[k] = v))
 
-  // ----------------------------------------------------------------
-  // 🔹 Response Helpers (optimized, no redundant checks)
-  // ----------------------------------------------------------------
-  // send() → generic helper
-  ;(res as any).send = function (data: any) {
-    if (res.writableEnded) return
-    if (!res.headersSent) res.setHeader('Content-Type', 'application/json')
-    const out = typeof data === 'string' ? data : JSON.stringify(data)
-    res.end(out)
+  const enhanced = res as EnhancedServerResponse
+
+  // Response helpers
+  enhanced.status = function (code: number) {
+    if (!this.writableEnded) this.statusCode = code
+    return this
   }
 
-  // json() → cleaner sugar over send()
-  ;(res as any).json = function (data: any) {
-    if (res.writableEnded) return
-    if (!res.headersSent) res.setHeader('Content-Type', 'application/json')
-    res.end(JSON.stringify(data))
+  enhanced.type = function (mime: string) {
+    if (!this.writableEnded && !this.headersSent) this.setHeader('Content-Type', mime)
+    return this
   }
 
-  // ----------------------------------------------------------------
-  // 🔹 Parse body (if JSON and method != GET/HEAD)
-  // ----------------------------------------------------------------
-  let body: any = undefined
-  const method = (req.method || 'GET').toUpperCase()
-  const contentType = (req.headers['content-type'] || '') as string
-
-  if (method !== 'GET' && method !== 'HEAD' && contentType.includes('application/json')) {
+  enhanced.json = function (data: any) {
+    if (this.writableEnded) return this
+    if (!this.headersSent) this.setHeader('Content-Type', 'application/json')
     try {
-      const raw = await readBody(req)
-      if (raw) {
-        try {
-          body = JSON.parse(raw)
-        } catch {
-          body = raw
-        }
-      }
+      this.end(typeof data === 'string' ? data : JSON.stringify(data))
     } catch {
-      body = undefined
+      try { this.end('{"error":"serialization failed"}') } catch {}
     }
+    const ctx = (this as any)._ctxRef as Context | undefined
+    if (ctx) ctx._ended = true
+    return this
   }
 
-  // ----------------------------------------------------------------
-  // 🔹 Build final context object
-  // ----------------------------------------------------------------
+  enhanced.send = function (data: any) {
+    if (this.writableEnded) return this
+    if (typeof data === 'object' && !Buffer.isBuffer(data)) {
+      if (!this.headersSent) this.setHeader('Content-Type', 'application/json')
+      try {
+        this.end(JSON.stringify(data))
+      } catch {
+        try { this.end('{"error":"serialization failed"}') } catch {}
+      }
+    } else {
+      this.end(data)
+    }
+    const ctx = (this as any)._ctxRef as Context | undefined
+    if (ctx) ctx._ended = true
+    return this
+  }
+
+  /**
+   * 🚫 Removed internal body parsing.
+   * Let `bodyParser` plugin handle JSON, URL-encoded, and text bodies.
+   */
   const ctx: Context = {
     req,
-    res: res as Context['res'],
-    body,
+    res: enhanced,
+    body: undefined, // will be set later by bodyParser
     query,
     params: {},
     pathname,
     user: undefined,
     _ended: false
   }
+
+  // backref for helper closures
+  ;(enhanced as any)._ctxRef = ctx
 
   return ctx
 }

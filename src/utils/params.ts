@@ -1,4 +1,12 @@
-// src/utils/params.ts
+/**
+ * Param extraction & argument builder utilities
+ * ---------------------------------------------
+ * - extractParamNames: safely parse function parameter names (supports arrow & regular)
+ * - compileArgBuilder: builds optimized function to map ctx → [ctx.body, ctx.user, ...]
+ *
+ * This enables auto-injection of context fields as top-level handler arguments.
+ */
+
 const PARAMS_RE = /^\s*(?:async\s*)?(?:function\b[^(]*\(|\()([^)]*)\)/
 const SIMPLE_ARROW_RE = /^\s*(?:async\s*)?\(?\s*([^)=]*)\s*\)?\s*=>/
 
@@ -9,8 +17,12 @@ function sanitizeName(n: string): string | null {
   return s
 }
 
+/**
+ * Extract parameter names from a function definition.
+ * Handles async, arrow, and default values.
+ */
 export function extractParamNames(fn: Function): string[] {
-  const src = fn.toString()
+  const src = Function.prototype.toString.call(fn)
   let match = src.match(SIMPLE_ARROW_RE)
   if (!match) match = src.match(PARAMS_RE)
   if (!match) return []
@@ -26,21 +38,28 @@ export function extractParamNames(fn: Function): string[] {
   return out
 }
 
-export function compileArgBuilder(paramNames: string[]): ((ctx: any) => any[]) {
+/**
+ * compileArgBuilder:
+ * - if handler uses (ctx) or (context) → passes full ctx
+ * - otherwise injects requested ctx keys, e.g. (body, user, params)
+ *
+ * Compiles once per handler registration (fast, no runtime eval).
+ */
+export function compileArgBuilder(paramNames: string[]): (ctx: any) => any[] {
   if (paramNames.length === 0) return () => []
-  const first = paramNames[0]?.toLowerCase()
+  const first = (paramNames[0] || '').toLowerCase()
   if (paramNames.length === 1 && (first === 'ctx' || first === 'context')) {
     return (ctx: any) => [ctx]
   }
 
+  // Build optimized Function body
   const parts: string[] = []
   for (const n of paramNames) {
     parts.push(`ctx['${n}'] ?? undefined`)
   }
   const fnBody = `return [${parts.join(',')}];`
-  // new Function compiled once per route registration
-  // paramNames are sanitized so this is safe
+
   // eslint-disable-next-line no-new-func
-  const f = new Function('ctx', fnBody) as (ctx: any) => any[]
-  return f
+  const fn = new Function('ctx', fnBody) as (ctx: any) => any[]
+  return fn
 }

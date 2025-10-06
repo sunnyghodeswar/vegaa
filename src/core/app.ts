@@ -1,102 +1,102 @@
+/**
+ * src/core/app.ts
+ *
+ * VegaJS — Core App Implementation (strict + production ready)
+ *
+ * - Uses Node’s stable `http` for ingress.
+ * - Uses `find-my-way` via Router adapter for ultra-fast routing.
+ * - Supports global & route-level middleware.
+ * - Context-based handler execution.
+ * - Optional cache, plugin, and cluster support.
+ * - Sugar method `.startVegaaServer()` for clean startup syntax.
+ */
+
 import http from 'http'
 import os from 'os'
 import cluster from 'cluster'
+import type { AddressInfo } from 'net'
 import { RouteBuilder } from './routeBuilder'
-import { Handler, Context, Route, MiddlewareEntry } from './types'
-import { Plugin, isPlugin, isMiddleware } from './plugin'
+import type { Handler, Context, Route, MiddlewareEntry } from './types'
+import { isPlugin } from './plugins'
 import { buildContext } from '../utils/context'
 import { Semaphore } from '../utils/semaphore'
 import { cacheGetOrSet } from '../utils/cache'
-import { jsonMiddleware } from '../plugins/json'
-import { corsMiddleware } from '../plugins/cors'
 import { extractParamNames, compileArgBuilder } from '../utils/params'
+import { Router } from '../router/adapter'
 
 export class App {
-  private routeMap: Map<string, Map<string, Route>> = new Map()
+  private routerMap = new Map<string, Router>()
   private globalMiddlewares: MiddlewareEntry[] = []
-
   private hooks = {
-    onRequest: [] as ((ctx: Context) => Promise<void> | void)[],
-    onResponse: [] as ((ctx: Context, data: any) => Promise<void> | void)[],
-    onError: [] as ((ctx: Context, err: Error) => Promise<void> | void)[]
+    onRequest: [] as Array<(ctx: Context) => Promise<void> | void>,
+    onResponse: [] as Array<(ctx: Context, data: any) => Promise<void> | void>,
+    onError: [] as Array<(ctx: Context, err: Error) => Promise<void> | void>
   }
+
+  private routeRegistry = new Map<string, Route>()
 
   constructor(public opts: Record<string, any> = {}) {}
 
-  // -------------------------------------------------------------------
-  // ROUTE REGISTRATION
-  // -------------------------------------------------------------------
-  public route(path: string) {
+  // -------------------------------
+  // ROUTE BUILDERS
+  // -------------------------------
+  public route(path: string): RouteBuilder {
     return new RouteBuilder(this, path)
   }
-  public call(path: string) {
+  public call(path: string): RouteBuilder {
     return this.route(path)
   }
 
-  // -------------------------------------------------------------------
-  // GLOBAL MIDDLEWARES
-  // -------------------------------------------------------------------
+  // -------------------------------
+  // GLOBAL MIDDLEWARE
+  // -------------------------------
   public middleware(mw: Handler | Handler[]): this {
-    const add = (fn: Handler) => {
+    const addOne = (fn: Handler) => {
+      if (typeof fn !== 'function') throw new TypeError('middleware expects a function')
       const names = extractParamNames(fn as Function)
       const builder = names.length ? compileArgBuilder(names) : undefined
       this.globalMiddlewares.push({ fn, paramNames: names, argBuilder: builder })
     }
-    if (Array.isArray(mw)) {
-      for (const fn of mw) {
-        if (!isMiddleware(fn)) throw new TypeError('Invalid middleware')
-        add(fn)
-      }
-    } else {
-      if (!isMiddleware(mw)) throw new TypeError('Invalid middleware')
-      add(mw)
-    }
+
+    if (Array.isArray(mw)) mw.forEach(addOne)
+    else addOne(mw)
+
     return this
   }
 
-  // -------------------------------------------------------------------
+  // -------------------------------
   // PLUGINS
-  // -------------------------------------------------------------------
-  public async plugin(plugin: Plugin): Promise<this> {
+  // -------------------------------
+  public async plugin(plugin: { register: (app: App, opts?: Record<string, any>) => any }, opts?: Record<string, any>): Promise<this> {
     if (!isPlugin(plugin)) throw new TypeError('plugin() expects an object with register(app)')
-    await plugin.register(this)
+    await plugin.register(this, opts)
     return this
   }
 
-  public json(): this {
-    const fn = jsonMiddleware()
-    const names = extractParamNames(fn as Function)
-    const builder = names.length ? compileArgBuilder(names) : undefined
-    this.globalMiddlewares.unshift({ fn, paramNames: names, argBuilder: builder })
-    return this
+  // -------------------------------
+  // DECORATORS
+  // -------------------------------
+  public decorate<K extends string, V>(
+    this: App, // 👈 Required for TS strict mode
+    key: K,
+    value: V
+  ): asserts this is this & Record<K, V> {
+    if (!key || typeof key !== 'string') throw new TypeError('decorate() requires a string key')
+    const self = this as Record<string, unknown>
+    if (self[key] !== undefined) throw new Error(`Property "${key}" already exists on app`)
+    self[key] = value
   }
 
-  public cors(opts?: any): this {
-    const fn = corsMiddleware(opts)
-    const names = extractParamNames(fn as Function)
-    const builder = names.length ? compileArgBuilder(names) : undefined
-    this.globalMiddlewares.unshift({ fn, paramNames: names, argBuilder: builder })
-    return this
-  }
-
-  public decorate<K extends string, V>(key: K, value: V): asserts this is this & Record<K, V> {
-    if (!key || typeof key !== 'string') throw new TypeError('decorate() requires string key')
-    if (key in this) throw new Error(`Property "${key}" already exists on app`)
-    ;(this as any)[key] = value
-  }
-
-  // -------------------------------------------------------------------
-  // ROUTE HANDLING
-  // -------------------------------------------------------------------
-  public registerRoute(
-    method: string,
-    path: string,
-    handler: Handler,
-    mws: Handler[],
-    cfg: Record<string, any> | null
-  ) {
-    const methodKey = method.toUpperCase()
-    const table = this.routeMap.get(methodKey) ?? new Map<string, Route>()
+  // -------------------------------
+  // ROUTE REGISTRATION
+  // -------------------------------
+  public registerRoute(method: string, path: string, handler: Handler, mws: Handler[], cfg: Record<string, any> | null): void {
+    const methodKey = (method || 'GET').toUpperCase()
+    let router = this.routerMap.get(methodKey)
+    if (!router) {
+      router = new Router()
+      this.routerMap.set(methodKey, router)
+    }
 
     const routeMws: MiddlewareEntry[] = []
     for (const fn of mws) {
@@ -105,112 +105,151 @@ export class App {
       routeMws.push({ fn, paramNames: names, argBuilder: builder })
     }
 
-    const names = extractParamNames(handler as Function)
-    const builder = names.length ? compileArgBuilder(names) : undefined
+    const paramNames = extractParamNames(handler as Function)
+    const argBuilder = paramNames.length ? compileArgBuilder(paramNames) : undefined
 
-    table.set(path, { method: methodKey, path, handler, mws: routeMws, cfg, paramNames: names, argBuilder: builder })
-    this.routeMap.set(methodKey, table)
+    const route: Route = {
+      method: methodKey,
+      path,
+      handler,
+      mws: routeMws,
+      cfg,
+      paramNames,
+      argBuilder
+    }
+
+    const key = `${methodKey} ${path}`
+    this.routeRegistry.set(key, route)
+    router.on(methodKey, path, () => {}) // precompile path pattern
   }
 
-  private getRoute(method: string, pathname: string): Route | null {
-    const table = this.routeMap.get((method || 'GET').toUpperCase())
-    return table?.get(pathname) ?? null
-  }
+  // -------------------------------
+  // ROUTE LOOKUP
+  // -------------------------------
+  private getRoute(method: string, pathname: string): { route: Route | null; params: Record<string, string> } {
+    const m = (method || 'GET').toUpperCase()
+    const router = this.routerMap.get(m)
+    if (!router) return { route: null, params: {} }
 
-  // -------------------------------------------------------------------
-  // INTERNAL EXECUTION
-  // -------------------------------------------------------------------
-private async runMiddlewares(list: MiddlewareEntry[], ctx: Context) {
-  for (const entry of list) {
-    if (ctx._ended || ctx.res.writableEnded) return
+    const found = router.find(m, pathname)
+    if (!found.handler) return { route: null, params: found.params ?? {} }
 
-    let result: any
-    if (entry.argBuilder) result = await Promise.resolve((entry.fn as any)(...entry.argBuilder(ctx)))
-    else result = await Promise.resolve((entry.fn as any)(ctx))
-
-    // ✅ Merge returned object into ctx
-    if (result && typeof result === 'object') {
-      for (const key in result) {
-        if (key !== 'req' && key !== 'res' && key !== '_ended') {
-          ;(ctx as any)[key] = result[key]
-        }
+    for (const [k, route] of this.routeRegistry.entries()) {
+      const [rk, rp] = k.split(' ', 2)
+      if (rk !== m) continue
+      if (rp === pathname) return { route, params: found.params ?? {} }
+      if (rp.includes(':') || rp.includes('*')) {
+        const regex = new RegExp('^' + rp.replace(/\*/g, '(.*)').replace(/:([^/]+)/g, '([^/]+)') + '$')
+        if (regex.test(pathname)) return { route, params: found.params ?? {} }
       }
     }
 
-    if (ctx._ended || ctx.res.writableEnded) return
+    return { route: null, params: found.params ?? {} }
   }
-}
 
-  // -------------------------------------------------------------------
-  // MAIN REQUEST HANDLER
-  // -------------------------------------------------------------------
-  private async handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
+   /**
+   * Executes middleware entries sequentially.
+   * 
+   * ✅ Each middleware receives auto-injected args (based on param names)
+   * ✅ If it returns a plain object, its keys are merged into ctx
+   * ✅ Non-object returns are ignored (with optional dev warning)
+   * ✅ Chainable and context-aware: later middlewares see earlier merged data
+   */
+  private async runMiddlewares(list: MiddlewareEntry[], ctx: Context): Promise<void> {
+    for (const entry of list) {
+      if (ctx._ended || ctx.res.writableEnded) return
+
+      // 🧩 Build argument list dynamically based on param names (body, user, query, etc.)
+      const args = entry.argBuilder ? entry.argBuilder(ctx) : [ctx]
+
+      let result: any
+      try {
+        result = await Promise.resolve((entry.fn as any)(...args))
+      } catch (err) {
+        console.error('⚠️ Middleware threw an error:', err)
+        throw err
+      }
+
+      // 🧱 Merge returned plain objects into ctx
+      if (result && typeof result === 'object' && !Array.isArray(result)) {
+        for (const key of Object.keys(result)) {
+          if (key === 'req' || key === 'res' || key === '_ended') continue
+          (ctx as any)[key] = result[key]
+        }
+      } else if (result !== undefined && process.env.NODE_ENV !== 'production') {
+        // 🧃 Helpful dev warning for accidental non-object returns
+        console.warn(
+          `⚠️ Vegaa middleware ignored non-object return (${typeof result}). ` +
+          `If you meant to return an object, wrap it like: () => ({ foo: "bar" })`
+        )
+      }
+
+      if (ctx._ended || ctx.res.writableEnded) return
+    }
+  }
+  // -------------------------------
+  // REQUEST HANDLER
+  // -------------------------------
+  private async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
     const ctx = await buildContext(req, res)
     let responsePayload: any = null
+    const method = (ctx.req.method || 'GET').toUpperCase()
+    const pathname = ctx.pathname
 
     try {
-      // ---------- onRequest ----------
       for (const hook of this.hooks.onRequest) await hook(ctx)
-      if (ctx._ended || res.writableEnded) return
+      if (ctx._ended) return
 
-      // ---------- global middleware ----------
       await this.runMiddlewares(this.globalMiddlewares, ctx)
-      if (ctx._ended || res.writableEnded) return
+      if (ctx._ended) return
 
-      // ---------- route lookup ----------
-      const route = this.getRoute(ctx.req.method || 'GET', ctx.pathname)
+      const { route, params } = this.getRoute(method, pathname)
       if (!route) {
-        if ((ctx.req.method || '').toUpperCase() === 'OPTIONS') {
-          res.statusCode = 204
-          res.end()
-          return
-        }
         res.statusCode = 404
-        if (!res.headersSent) res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ error: 'Not found' }))
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: `Route ${method} ${pathname} not found` }))
         return
       }
 
-      // ---------- route-level middleware ----------
+      ctx.params = params
       await this.runMiddlewares(route.mws, ctx)
-      if (ctx._ended || res.writableEnded) return
+      if (ctx._ended) return
 
-      // ---------- handler ----------
+      responsePayload = route.argBuilder
+        ? await (route.handler as any)(...route.argBuilder(ctx))
+        : await (route.handler as any)(ctx)
+
       if (route.cfg?.cacheTTL) {
         const key = `${route.method}:${route.path}:${JSON.stringify(ctx.query)}`
         responsePayload = await cacheGetOrSet(key, route.cfg.cacheTTL, async () => {
-          const args = route.argBuilder ? route.argBuilder(ctx) : [ctx]
-          return await (route.handler as any)(...args)
+          return route.argBuilder
+            ? await (route.handler as any)(...route.argBuilder!(ctx))
+            : await (route.handler as any)(ctx)
         })
-      } else {
-        const args = route.argBuilder ? route.argBuilder(ctx) : [ctx]
-        responsePayload = await (route.handler as any)(...args)
       }
 
-      // ---------- onResponse ----------
       for (const hook of this.hooks.onResponse) await hook(ctx, responsePayload)
 
-      // ---------- final send ----------
       if (!ctx._ended && !res.writableEnded) {
-        if (!res.headersSent) res.setHeader('Content-Type', 'application/json')
+        res.statusCode = res.statusCode || 200
+        res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify(responsePayload ?? null))
         ctx._ended = true
       }
     } catch (err: any) {
-      const errorObj = err instanceof Error ? err : new Error(String(err))
-      for (const hook of this.hooks.onError) await hook(ctx, errorObj)
+      const e = err instanceof Error ? err : new Error(String(err))
+      for (const hook of this.hooks.onError) await hook(ctx, e)
       if (!res.headersSent) res.setHeader('Content-Type', 'application/json')
-      if (!res.writableEnded) {
-        res.statusCode = 500
-        res.end(JSON.stringify({ error: errorObj.message }))
-      }
+      res.statusCode = 500
+      res.end(JSON.stringify({ error: e.message }))
+      ctx._ended = true
     }
   }
 
-  // -------------------------------------------------------------------
-  // SERVER STARTER
-  // -------------------------------------------------------------------
-  public async startServer({ port = 3000, maxConcurrency = 100 } = {}) {
+  // -------------------------------
+  // SERVER STARTUP
+  // -------------------------------
+  public async startServer({ port = 3000, maxConcurrency = 100 } = {}): Promise<void> {
     if (cluster.isPrimary && process.env.CLUSTER === 'true') {
       const cpus = Math.max(1, os.cpus().length)
       for (let i = 0; i < cpus; i++) cluster.fork()
@@ -231,23 +270,45 @@ private async runMiddlewares(list: MiddlewareEntry[], ctx: Context) {
       }
     })
 
-    return new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       server.on('error', reject)
       server.listen(port, () => {
-        console.log(`🚀 VegaJS listening on port ${port} (pid ${process.pid})`)
+        const addr = server.address() as AddressInfo | null
+        console.log(`🚀 VegaJS listening on port ${addr?.port ?? port} (pid ${process.pid})`)
         resolve()
       })
     })
   }
+
+  // -------------------------------
+  // HOOKS
+  // -------------------------------
+  public onRequest(fn: (ctx: Context) => Promise<void> | void) {
+    this.hooks.onRequest.push(fn)
+  }
+  public onResponse(fn: (ctx: Context, data: any) => Promise<void> | void) {
+    this.hooks.onResponse.push(fn)
+  }
+  public onError(fn: (ctx: Context, err: Error) => Promise<void> | void) {
+    this.hooks.onError.push(fn)
+  }
 }
 
-// -------------------------------------------------------------------
-// FACTORY
-// -------------------------------------------------------------------
+/**
+ * Factory — returns callable app instance with .startVegaaServer()
+ */
 export function createApp(opts?: Record<string, any>) {
   const app = new App(opts)
-  const callable = ((path: string) => app.call(path)) as unknown as App & ((path: string) => RouteBuilder)
+  const callable = ((path: string) => app.call(path)) as App & ((path: string) => RouteBuilder) & {
+    startVegaaServer: (opts?: { port?: number; maxConcurrency?: number }) => Promise<void>
+  }
+
   Object.setPrototypeOf(callable, App.prototype)
   Object.assign(callable, app)
+
+  callable.startVegaaServer = async function (opts?: { port?: number; maxConcurrency?: number }) {
+    return app.startServer(opts)
+  }
+
   return callable
 }

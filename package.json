@@ -1,7 +1,7 @@
 {
-  "name": "vegajs",
-  "version": "0.1.0",
-  "description": "VegaJS — A blazing-fast, developer-first Node.js framework.",
+  "name": "vegaa",
+  "version": "0.2.0",
+  "description": "🔥 Vegaa — A lightning-fast, zero-boilerplate Node.js framework focused on speed, scalability, and pure developer joy.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -11,8 +11,13 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^24.7.0",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.0.0",
-    "@types/node": "*"
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "fast-json-stringify": "^6.1.1",
+    "find-my-way": "^9.3.0",
+    "undici": "^7.16.0"
   }
 }

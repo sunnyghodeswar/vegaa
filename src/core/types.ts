@@ -1,9 +1,26 @@
 import http from 'http'
 
-export type Context<B = any, Q = Record<string, any>, P = Record<string, any>> = {
+/**
+ * EnhancedServerResponse: small set of helpers we attach to ServerResponse.
+ * These are minimal and synchronous where possible to avoid extra allocations.
+ */
+export type EnhancedServerResponse = http.ServerResponse & {
+  json?: (data: any) => EnhancedServerResponse
+  send?: (data: any) => EnhancedServerResponse
+  status?: (code: number) => EnhancedServerResponse
+  type?: (mime: string) => EnhancedServerResponse
+  // _ctxRef is an internal back-reference for helpers
+  _ctxRef?: Context
+}
+
+/**
+ * Context: the per-request context available to handlers and middleware.
+ * Keep it tiny and predictable.
+ */
+export type Context<B = any, Q = Record<string, any>, P = Record<string, string>> = {
   req: http.IncomingMessage
-  res: http.ServerResponse & { send?: (data: any) => void }
-  body: B
+  res: EnhancedServerResponse
+  body?: B
   query: Q
   params: P
   pathname: string
@@ -11,19 +28,20 @@ export type Context<B = any, Q = Record<string, any>, P = Record<string, any>> =
   _ended?: boolean
 }
 
-/** Handler: either ctx-style or smart arg list (runtime handles mapping) */
+/**
+ * Handler: either ctx-style or smart arg-list style.
+ * Smart arg mapping is performed using compileArgBuilder in utils/params.ts
+ */
 export type Handler<B = any, Q = any, P = any> =
   | ((ctx: Context<B, Q, P>) => Promise<any> | any)
   | ((...args: any[]) => Promise<any> | any)
 
-/** Middleware entry used internally: stores fn + precompiled argBuilder */
 export interface MiddlewareEntry {
   fn: Handler
   paramNames?: string[]
   argBuilder?: (ctx: Context) => any[]
 }
 
-/** Route descriptor */
 export interface Route {
   method: string
   path: string

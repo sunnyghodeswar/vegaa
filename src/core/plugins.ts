@@ -1,16 +1,18 @@
 import type { App } from './app'
-import type { Handler } from './types'
 
 export interface Plugin {
   name?: string
   version?: string
-  register(app: App): Promise<void> | void
+  /**
+   * Register function called with the app and optional options.
+   */
+  register(app: App, opts?: Record<string, any>): Promise<void> | void
 }
 
 export function isPlugin(obj: any): obj is Plugin {
   return obj && typeof obj.register === 'function'
 }
 
-export function isMiddleware(obj: any): obj is Handler {
+export function isMiddleware(obj: any): obj is Function {
   return typeof obj === 'function'
 }

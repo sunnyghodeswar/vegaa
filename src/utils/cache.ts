@@ -10,6 +10,4 @@ export async function cacheGetOrSet(key: string, ttl: number, fn: () => Promise<
   return data
 }
 
-export function _cacheClear() {
-  cache.clear()
-}
+export function _cacheClear() { cache.clear() }

@@ -7,10 +7,7 @@ export class Semaphore {
   }
 
   async acquire(): Promise<void> {
-    if (this.count < this.limit) {
-      this.count++
-      return
-    }
+    if (this.count < this.limit) { this.count++; return }
     await new Promise<void>((resolve) => this.waiters.push(resolve))
     this.count++
   }

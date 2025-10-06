@@ -1,0 +1,64 @@
+# --------------------------------------------------------
+# 🧱 Vegaa — Clean Publish Configuration
+# --------------------------------------------------------
+# Only `dist/`, `package.json`, `README.md`, and LICENSE
+# will be included when you publish to npm.
+# Everything else stays local.
+# --------------------------------------------------------
+
+# 🚫 Source code (not for npm consumers)
+src/
+example/
+examples/
+tests/
+test/
+__tests__/
+scripts/
+playground/
+tmp/
+drafts/
+
+# 🚫 Local configs & metadata
+tsconfig.json
+tsconfig.build.json
+tsconfig.dev.json
+eslint.config.*
+.eslintrc*
+.prettierrc*
+.prettierignore
+.npmrc
+.vscode/
+.idea/
+.editorconfig
+.env
+.env.*
+
+# 🚫 Local runtime artifacts
+*.log
+*.pid
+*.seed
+*.tgz
+*.local
+*.bak
+*.swp
+*.DS_Store
+Thumbs.db
+
+# 🚫 Dependencies
+node_modules/
+coverage/
+dist/**/*.map
+
+# 🚫 Git / build output
+.git/
+.gitignore
+.gitmodules
+
+# 🚫 OS / Tool junk
+.DS_Store
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

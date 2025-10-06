@@ -1,90 +1,106 @@
-import { createApp } from '../index'
-import { corsPlugin } from '../plugins/cors'
-import { jsonPlugin } from '../plugins/json'
+/**
+ * Vegaa Example App — Full CRUD Demo 🧠
+ * -------------------------------------
+ * Demonstrates:
+ *  ✅ Global middleware and contextual injection
+ *  ✅ Full CRUD with in-memory DB
+ *  ✅ Auto param + body injection
+ *  ✅ Chainable routes
+ *  ✅ Logging for every major event
+ */
 
-// Example user type
-type User = { id: number; name: string }
+import { vegaa, route, corsPlugin, jsonPlugin, bodyParserPlugin } from '../index'
+import type { Context } from '../core/types'
 
-async function main() {
-  // ----------------------------------------------------
-  // 🚀 Create app instance
-  // ----------------------------------------------------
-  const app = createApp()
-
-  // ----------------------------------------------------
-  // 🔌 Built-in Plugins
-  // ----------------------------------------------------
-  await app.plugin(corsPlugin)
-  await app.plugin(jsonPlugin)
-
-  // ----------------------------------------------------
-  // 🌍 Global Middleware
-  // ----------------------------------------------------
-  // 1️⃣ Global header injection
-  app.middleware((res) => {
-    res.setHeader('X-Powered-By', 'VegaJS')
-  })
-
-  // 2️⃣ Mock auth middleware (returns a user → auto-injected)
-  app.middleware(() => ({
-    user: { id: 1, name: 'Sunny Dev' } as User
-  }))
-
-  // ----------------------------------------------------
-  // 🧩 Decorators (optional helpers)
-  // ----------------------------------------------------
-  app.decorate('greet', () => '👋 Hello from VegaJS!')
-
-  // ----------------------------------------------------
-  // ⚡ Routes
-  // ----------------------------------------------------
-
-  // 1️⃣ Health check
-  app('/ping').get((res) => {
-    res.json({ ok: true, framework: 'VegaJS' })
-  })
-
-  // 2️⃣ Movies endpoint with middleware + contextual args
-  app('/movie')
-    .middleware((user: User | undefined) => {
-      console.log('Route-level middleware → user:', user?.name)
-    })
-    .get((user: User | undefined, res) => {
-      res.json({
-        msg: '🎬 List of movies',
-        user,
-        greet: (app as any).greet?.()
-      })
-    })
-    .post((body: any, user: User | undefined, res) => {
-      res.json({
-        msg: '✅ Movie added successfully',
-        body,
-        addedBy: user
-      })
-    })
-
-  // 3️⃣ Personalized route
-  app('/me').get((user: User | undefined) => ({
-    msg: `Hi ${user?.name ?? 'Guest'}`
-  }))
-
-  // 4️⃣ Cached route (demonstrates cacheTTL)
-  app('/slow').get({ cacheTTL: 5000 }, (res) => {
-    res.json({
-      msg: '🕐 Cached response valid for 5s',
-      time: new Date().toISOString()
-    })
-  })
-
-  // ----------------------------------------------------
-  // 🖥️ Start the Server
-  // ----------------------------------------------------
-  await app.startServer({ port: 4000, maxConcurrency: 200 })
+// 🧱 Mock DB (in-memory for demo)
+const db: Record<number, { id: number; name: string; email: string }> = {
+  1: { id: 1, name: 'Sunny', email: 'sunny@example.com' },
+  2: { id: 2, name: 'Jane', email: 'jane@example.com' }
 }
 
-// Global safety net
+async function main() {
+  console.log('🚀 Starting Vegaa CRUD Example Server...')
+
+  // 🔌 Plugins (Body parser, JSON helper, CORS)
+  await vegaa.plugin(corsPlugin)
+  await vegaa.plugin(jsonPlugin)
+  await vegaa.plugin(bodyParserPlugin)
+  console.log('[Plugins] ✅ All plugins registered')
+
+  // 🌍 Global Middleware — inject user, log everything
+  vegaa.middleware([
+    async () => ({ user: { id: 99, name: 'Admin' } }),
+    async (user: { name: any; }) => ({ appName: `Vegaa CRUD for ${user.name}` }),
+    async (user, appName, pathname) => {
+      console.log(`🧩 [Global MW] ${user.name} hitting ${pathname} under ${appName}`)
+    }
+  ])
+
+  // 🧠 Decorate app with metadata
+  vegaa.decorate('version', '1.1.0')
+  console.log(`[Vegaa] version ${(vegaa as any).version}`)
+
+  // 🧱 CRUD ROUTES -------------------------------------------------------------
+
+  route('/users')
+    // 🔍 GET all users
+    .get(() => {
+      console.log('📦 [GET /users] Returning all users')
+      return { users: Object.values(db) }
+    })
+
+    // ➕ POST create user
+    .post((body: { name: any; email: any; }) => {
+      console.log('📦 [POST /users] Creating user', body)
+      if (!body?.name || !body?.email)
+        return { error: 'Missing name or email' }
+
+      const id = Math.max(0, ...Object.keys(db).map(Number)) + 1
+      const newUser = { id, name: body.name, email: body.email }
+      db[id] = newUser
+      return { message: 'User created', user: newUser }
+    })
+
+  // 🔍 GET single user
+  route('/users/:id')
+    .get((params: { id: any; }) => {
+      console.log(`📦 [GET /users/${params.id}] Fetching user`)
+      const user = db[Number(params.id)]
+      return user ? user : { error: 'User not found' }
+    })
+
+    // ✏️ PUT update user
+    .put((params: { id: any; }, body: { id: number; name: string; email: string; }) => {
+      console.log(`📦 [PUT /users/${params.id}] Updating user`, body)
+      const id = Number(params.id)
+      if (!db[id]) return { error: 'User not found' }
+      db[id] = { ...db[id], ...body }
+      return { message: 'User updated', user: db[id] }
+    })
+
+    // ❌ DELETE user
+    .delete((params: { id: any; }) => {
+      console.log(`📦 [DELETE /users/${params.id}] Removing user`)
+      const id = Number(params.id)
+      if (!db[id]) return { error: 'User not found' }
+      delete db[id]
+      return { message: `User ${id} deleted` }
+    })
+
+  // 🧠 Info route (just for verification)
+  route('/info').get((user: any, appName: any, version: any) => ({
+    user,
+    appName,
+    version,
+    totalUsers: Object.keys(db).length
+  }))
+
+  // 🚀 Start server
+  await vegaa.startVegaaServer({ port: 4000 })
+  console.log('🌈 Vegaa live → http://localhost:4000')
+}
+
 main().catch((err) => {
-  console.error('💥 Fatal Error:', err)
+  console.error('💥 Startup failed:', err)
   process.exit(1)
 })
