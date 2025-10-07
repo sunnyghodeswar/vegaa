@@ -97,7 +97,7 @@ async function main() {
 
   // 🚀 Start server
   await vegaa.startVegaaServer({ port: 4000 })
-  console.log('🌈 Vegaa live → http://localhost:4000')
+  // console.log('🌈 Vegaa live → http://localhost:4000')
 }
 
 main().catch((err) => {

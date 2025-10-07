@@ -228,7 +228,7 @@ WebSockets, Redis integration, streaming API, advanced auth
 
 ## Author
 
-Built by [Sunny](https://github.com/yourusername)
+Made with ❤️ by Sunny Ghodeswar | Pune, India 🇮🇳
 
 ---
 

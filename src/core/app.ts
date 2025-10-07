@@ -23,6 +23,7 @@ import { Semaphore } from '../utils/semaphore'
 import { cacheGetOrSet } from '../utils/cache'
 import { extractParamNames, compileArgBuilder } from '../utils/params'
 import { Router } from '../router/adapter'
+import { findAvailablePort } from '../utils/port';  
 
 export class App {
   private routerMap = new Map<string, Router>()
@@ -250,36 +251,47 @@ public decorate<K extends string, V>(key: K, value: V): void {
   // -------------------------------
   // SERVER STARTUP
   // -------------------------------
-  public async startServer({ port = 3000, maxConcurrency = 100 } = {}): Promise<void> {
-    if (cluster.isPrimary && process.env.CLUSTER === 'true') {
-      const cpus = Math.max(1, os.cpus().length)
-      for (let i = 0; i < cpus; i++) cluster.fork()
-      cluster.on('exit', (w) => {
-        console.warn(`worker ${w.process.pid} died — restarting...`)
-        cluster.fork()
-      })
-      return
+public async startServer({ port, maxConcurrency = 100 }: { port?: number; maxConcurrency?: number } = {}): Promise<void> {
+  if (cluster.isPrimary && process.env.CLUSTER === 'true') {
+    const cpus = Math.max(1, os.cpus().length)
+    const resolvedPort = await findAvailablePort(port ?? 3000)
+    process.env.VEGAA_PORT = String(resolvedPort)
+
+    for (let i = 0; i < cpus; i++) {
+      cluster.fork({ VEGAA_PORT: process.env.VEGAA_PORT })
     }
 
-    const sem = new Semaphore(Math.max(1, maxConcurrency))
-    const server = http.createServer(async (req, res) => {
-      await sem.acquire()
-      try {
-        await this.handleRequest(req, res)
-      } finally {
-        sem.release()
-      }
+    cluster.on('exit', (w) => {
+      console.warn(`💀 Worker ${w.process.pid} died — restarting...`)
+      cluster.fork({ VEGAA_PORT: process.env.VEGAA_PORT })
     })
 
-    await new Promise<void>((resolve, reject) => {
-      server.on('error', reject)
-      server.listen(port, () => {
-        const addr = server.address() as AddressInfo | null
-        console.log(`🚀 VegaJS listening on port ${addr?.port ?? port} (pid ${process.pid})`)
-        resolve()
-      })
-    })
+    console.log(`🔁 Cluster master bound to port ${resolvedPort}`)
+    return
   }
+
+  // Single-process mode
+  const resolvedPort = await findAvailablePort(port ?? 3000)
+  const sem = new Semaphore(Math.max(1, maxConcurrency))
+
+  const server = http.createServer(async (req, res) => {
+    await sem.acquire()
+    try {
+      await this.handleRequest(req, res)
+    } finally {
+      sem.release()
+    }
+  })
+
+  await new Promise<void>((resolve, reject) => {
+    server.on('error', reject)
+    server.listen(resolvedPort, () => {
+      const addr = server.address() as AddressInfo | null
+      console.log(`🚀 VegaaJS listening on port ${addr?.port ?? resolvedPort} (pid ${process.pid})`)
+      resolve()
+    })
+  })
+}
 
   // -------------------------------
   // HOOKS
