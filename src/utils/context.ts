@@ -13,7 +13,7 @@
 import http from 'http'
 import { URL } from 'url'
 import type { Context, EnhancedServerResponse } from '../core/types'
-
+import { makeRequest } from './makeRequest'
 export async function readBody(req: http.IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = ''
@@ -31,12 +31,22 @@ export async function buildContext(
   req: http.IncomingMessage,
   res: http.ServerResponse
 ): Promise<Context> {
-  const host = req.headers.host ?? 'localhost'
-  const rawUrl = req.url ?? '/'
-  const url = new URL(rawUrl, `http://${host}`)
-  const pathname = url.pathname
-  const query: Record<string, string> = {}
-  url.searchParams.forEach((v, k) => (query[k] = v))
+  const rawUrl = req.url || '/'
+  let pathname = '/'
+  let query: Record<string, string> = {}
+  const qIndex = rawUrl.indexOf('?')
+  if (qIndex === -1) {
+    pathname = rawUrl
+  } else {
+    pathname = rawUrl.slice(0, qIndex)
+    const search = rawUrl.slice(qIndex + 1)
+    if (search.length > 0) {
+      const sp = new URLSearchParams(search)
+      const q: Record<string, string> = {}
+      sp.forEach((v, k) => (q[k] = v))
+      query = q
+    }
+  }
 
   const enhanced = res as EnhancedServerResponse
 
@@ -93,7 +103,8 @@ export async function buildContext(
     params: {},
     pathname,
     user: undefined,
-    _ended: false
+    _ended: false,
+    makeRequest
   }
 
   // backref for helper closures

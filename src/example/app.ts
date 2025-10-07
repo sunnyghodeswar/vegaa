@@ -11,6 +11,7 @@
 
 import { vegaa, route, corsPlugin, jsonPlugin, bodyParserPlugin } from '../index'
 import type { Context } from '../core/types'
+import { httpClientPlugin } from '../plugins/httpClient'
 
 // 🧱 Mock DB (in-memory for demo)
 const db: Record<number, { id: number; name: string; email: string }> = {
@@ -25,6 +26,8 @@ async function main() {
   await vegaa.plugin(corsPlugin)
   await vegaa.plugin(jsonPlugin)
   await vegaa.plugin(bodyParserPlugin)
+  await vegaa.plugin(httpClientPlugin, { timeout: 4000 })
+
   console.log('[Plugins] ✅ All plugins registered')
 
   // 🌍 Global Middleware — inject user, log everything
@@ -95,8 +98,19 @@ async function main() {
     totalUsers: Object.keys(db).length
   }))
 
+
+route('/ping').get(async (makeRequest: MakeRequest) => {
+  const res = await makeRequest()
+    .url('https://jsonplaceholder.typicode.com/posts')
+    .post()
+    .body({ title: 'foo', body: 'bar', userId: 1 })
+    .json()
+
+  return res
+})
+
   // 🚀 Start server
-  await vegaa.startVegaaServer({ port: 4000 })
+  await vegaa.startVegaaServer( )
   // console.log('🌈 Vegaa live → http://localhost:4000')
 }
 

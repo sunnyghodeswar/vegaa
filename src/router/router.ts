@@ -43,18 +43,27 @@ export class Router {
    * Register a route handler.
    * method: string will be normalized to uppercase and cast to HTTPMethod.
    */
-  public on(method: string, path: string, handler: RawHandler): void {
+  public on(method: string, path: string, handler: RawHandler, store?: any): void {
     const m = (method || 'GET').toUpperCase() as HTTPMethod
     // find-my-way expects uppercase method strings; handler receives (req,res,params)
-    this.fw.on(m, path, async (req: IncomingMessage, res: ServerResponse, params: Record<string, string> | undefined) => {
-      await Promise.resolve(handler(req, res, params ?? {}))
-    })
+    this.fw.on(
+      m,
+      path,
+      { store },
+      async (
+        req: IncomingMessage,
+        res: ServerResponse,
+        params: Record<string, string> | undefined
+      ) => {
+        await Promise.resolve(handler(req, res, params ?? {}))
+      }
+    )
   }
 
   /**
    * Find a route. Returns object with `handler` (if present) and `params`.
    */
-  public find(method: string, path: string): { handler: RawHandler | null; params: Record<string, string> } {
+  public find(method: string, path: string): { handler: RawHandler | null; params: Record<string, string>; store?: any } {
     const m = (method || 'GET').toUpperCase() as HTTPMethod
     const found = this.fw.find(m, path)
     if (!found) return { handler: null, params: {} }
@@ -64,7 +73,7 @@ export class Router {
       // Call the stored handler (it will be the wrapper we created in `on`)
       return await Promise.resolve(fwHandler(req, res, params))
     }
-    return { handler: routeHandler, params: found.params ?? {} }
+    return { handler: routeHandler, params: found.params ?? {}, store: (found as any).store }
   }
 
   public prettyPrint(): string {

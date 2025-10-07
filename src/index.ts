@@ -4,38 +4,57 @@
  * Public API surface for Vegaa.
  *
  * Exposes:
- *  - `vegaa` → global singleton instance
- *  - `route()` → global route builder
- *  - `vegaa.startVegaaServer()` sugar for `startServer()`
+ *  - `vegaa` → global singleton app instance
+ *  - `route()` → globally bound route builder
+ *  - `vegaa.startVegaaServer()` → sugar for app.startServer()
  *  - Built-in plugins: corsPlugin, jsonPlugin, bodyParserPlugin
  */
 
 import { createApp } from './core/app'
 import type { App } from './core/app'
+
+// 🧩 Core Plugins (always bundled)
 import { corsPlugin } from './plugins/cors'
 import { jsonPlugin } from './plugins/json'
 import { bodyParserPlugin } from './plugins/bodyParser'
 
-// ✅ Explicitly typed global instance with attached startVegaaServer
-const baseApp = createApp()
+// ----------------------------------------------------
+// 🧠 Global Singleton App
+// ----------------------------------------------------
 
+// Create the one-and-only global instance.
+// Everything (routes, middleware, plugins) attach to this.
+const app = createApp()
+
+// Extend its type so TypeScript knows about the sugar method.
 export interface VegaaApp extends App {
   startVegaaServer(opts?: { port?: number; maxConcurrency?: number }): Promise<void>
 }
 
-// ✅ Construct fully-typed instance with sugar method
-export const vegaa: VegaaApp = Object.assign(baseApp, {
-  async startVegaaServer(this: App, opts?: { port?: number; maxConcurrency?: number }) {
-    // ✅ Explicit `this` annotation keeps TS happy and runtime stable
-    return baseApp.startServer(opts)
-  }
-})
+// Attach the sugar method with proper `this` binding.
+;(app as VegaaApp).startVegaaServer = async function (
+  this: App,
+  opts?: { port?: number; maxConcurrency?: number }
+) {
+  return this.startServer(opts)
+}
 
-// ✅ Global route() helper bound to this instance
-export const route = (path: string) => vegaa.route(path)
+// ----------------------------------------------------
+// 🪄 Global Shorthands
+// ----------------------------------------------------
 
-// ✅ Export built-in plugins
+// ✅ Fully bound route() — guaranteed to register under this same app.
+export const route = app.route.bind(app)
+
+// ✅ Global reference to the app instance itself.
+export const vegaa: VegaaApp = app as VegaaApp
+
+// ----------------------------------------------------
+// 🔌 Plugin Exports
+// ----------------------------------------------------
 export { corsPlugin, jsonPlugin, bodyParserPlugin }
 
-// ✅ Default export for convenience (import vegaa from 'vegaa')
+// ----------------------------------------------------
+// 🚀 Default Export (so `import vegaa from 'vegaa'` also works)
+// ----------------------------------------------------
 export default vegaa
