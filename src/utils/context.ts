@@ -27,10 +27,10 @@ export async function readBody(req: http.IncomingMessage): Promise<string> {
  * Build per-request context.
  * Minimal parsing — no JSON parsing here (delegated to bodyParser middleware).
  */
-export async function buildContext(
+export function buildContext(
   req: http.IncomingMessage,
   res: http.ServerResponse
-): Promise<Context> {
+): Context {
   const rawUrl = req.url || '/'
   let pathname = '/'
   let query: Record<string, string> = {}

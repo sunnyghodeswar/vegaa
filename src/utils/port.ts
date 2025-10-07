@@ -9,8 +9,8 @@ import cluster from "cluster"
  */
 export async function findAvailablePort(startPort = 3000, maxAttempts = 10): Promise<number> {
   // 👷 Worker mode: reuse shared port assigned by master
-  if (process.env.CLUSTER === "true" && cluster.isWorker && process.env.PORT) {
-    return Number(process.env.PORT)
+  if (process.env.CLUSTER === "true" && cluster.isWorker && process.env.VEGAA_PORT) {
+    return Number(process.env.VEGAA_PORT)
   }
 
   // 🧭 Scan ports sequentially

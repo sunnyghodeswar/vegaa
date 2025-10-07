@@ -158,28 +158,29 @@ export class App {
   // runMiddlewares - sequential, auto-inject + object merge
   // ---------------------------
   private async runMiddlewares(list: MiddlewareEntry[], ctx: Context): Promise<void> {
+    const isThenable = (v: any): v is Promise<unknown> => !!v && typeof v.then === 'function'
     for (const entry of list) {
       if (ctx._ended || ctx.res.writableEnded) return
 
       const args = entry.argBuilder ? entry.argBuilder(ctx) : [ctx]
 
-      let result: any
       try {
-        result = await Promise.resolve((entry.fn as any)(...args))
+        const maybe = (entry.fn as any)(...args)
+        const result = isThenable(maybe) ? await maybe : maybe
+
+        // merge plain-object returns into ctx
+        if (result && typeof result === 'object' && !Array.isArray(result)) {
+          for (const key of Object.keys(result)) {
+            if (key === 'req' || key === 'res' || key === '_ended') continue
+            ;(ctx as any)[key] = (result as any)[key]
+          }
+        } else if (result !== undefined && process.env.NODE_ENV !== 'production') {
+          // helpful dev warning (non-breaking)
+          console.warn(`Vegaa middleware returned non-object (${typeof result}) — ignored.`)
+        }
       } catch (err) {
         // bubble and allow onError hooks to run in handleRequest
         throw err
-      }
-
-      // merge plain-object returns into ctx
-      if (result && typeof result === 'object' && !Array.isArray(result)) {
-        for (const key of Object.keys(result)) {
-          if (key === 'req' || key === 'res' || key === '_ended') continue
-          ;(ctx as any)[key] = (result as any)[key]
-        }
-      } else if (result !== undefined && process.env.NODE_ENV !== 'production') {
-        // helpful dev warning (non-breaking)
-        console.warn(`Vegaa middleware returned non-object (${typeof result}) — ignored.`)
       }
 
       if (ctx._ended || ctx.res.writableEnded) return
@@ -190,14 +191,18 @@ export class App {
   // central request dispatcher
   // ---------------------------
   private async handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const ctx = await buildContext(req, res)
+    const ctx = buildContext(req, res)
     let responsePayload: any = null
     const method = (ctx.req.method || 'GET').toUpperCase()
     const pathname = ctx.pathname
 
+    const isThenable = (v: any): v is Promise<unknown> => !!v && typeof v.then === 'function'
     try {
       // onRequest hooks
-      for (const h of this.hooks.onRequest) await h(ctx)
+      for (const h of this.hooks.onRequest) {
+        const maybe = h(ctx)
+        if (isThenable(maybe)) await maybe
+      }
       if (ctx._ended) return
 
       // global middleware
@@ -221,26 +226,31 @@ export class App {
       await this.runMiddlewares(route.mws, ctx)
       if (ctx._ended) return
 
-      // handler invocation with compiled arg builder if available
-      if (route.argBuilder) {
-        const args = route.argBuilder(ctx)
-        responsePayload = await (route.handler as any)(...args)
-      } else {
-        responsePayload = await (route.handler as any)(ctx)
-      }
-
-      // caching support
-      if (route.cfg?.cacheTTL) {
+      // caching support — perform lookup BEFORE executing handler to avoid duplicate work
+      const shouldCache = !!route.cfg?.cacheTTL
+      if (shouldCache) {
         const key = `${route.method}:${route.path}:${JSON.stringify(ctx.query)}`
-        const data = await cacheGetOrSet(key, route.cfg.cacheTTL, async () => {
+        responsePayload = await cacheGetOrSet(key, route.cfg!.cacheTTL, async () => {
           if (route.argBuilder) return await (route.handler as any)(...route.argBuilder!(ctx))
           return await (route.handler as any)(ctx)
         })
-        responsePayload = data
+      } else {
+        // handler invocation with compiled arg builder if available
+        if (route.argBuilder) {
+          const args = route.argBuilder(ctx)
+          const maybe = (route.handler as any)(...args)
+          responsePayload = isThenable(maybe) ? await maybe : maybe
+        } else {
+          const maybe = (route.handler as any)(ctx)
+          responsePayload = isThenable(maybe) ? await maybe : maybe
+        }
       }
 
       // onResponse hooks
-      for (const h of this.hooks.onResponse) await h(ctx, responsePayload)
+      for (const h of this.hooks.onResponse) {
+        const maybe = h(ctx, responsePayload)
+        if (isThenable(maybe)) await maybe
+      }
 
       // final send
       if (!ctx._ended && !res.writableEnded) {
@@ -267,7 +277,10 @@ export class App {
       }
     } catch (err: any) {
       const errorObj = err instanceof Error ? err : new Error(String(err))
-      for (const h of this.hooks.onError) await h(ctx, errorObj)
+      for (const h of this.hooks.onError) {
+        const maybe = h(ctx, errorObj)
+        if (isThenable(maybe)) await maybe
+      }
       if (!res.headersSent) res.setHeader('Content-Type', 'application/json')
       res.statusCode = 500
       try {
@@ -283,13 +296,16 @@ export class App {
   // startServer — single or cluster
   // ---------------------------
   public async startServer({ port, maxConcurrency = 100 }: { port?: number; maxConcurrency?: number } = {}): Promise<void> {
-    // resolve a usable port (provided -> env -> findAvailablePort)
-    const chosenPort = port ?? (process.env.VEGAA_PORT ? Number(process.env.VEGAA_PORT) : undefined)
+    // resolve desired port from input or env
+    const desiredPort =
+      typeof port === 'number'
+        ? port
+        : (process.env.PORT ? Number(process.env.PORT) : (process.env.VEGAA_PORT ? Number(process.env.VEGAA_PORT) : undefined))
 
-    // --- Cluster mode: master forks workers; workers will listen on same port ---
+    // --- Cluster mode: master forks workers; workers will listen on SAME port ---
     if (cluster.isPrimary && process.env.CLUSTER === 'true') {
       const cpus = Math.max(1, os.cpus().length)
-      const resolvedPort = await findAvailablePort(chosenPort ?? 3000)
+      const resolvedPort = await findAvailablePort(desiredPort ?? 3000)
       process.env.VEGAA_PORT = String(resolvedPort)
 
       console.log(`🔁 Starting cluster master — forking ${cpus} workers; port=${resolvedPort}`)
@@ -301,8 +317,15 @@ export class App {
       return
     }
 
-    // --- Worker or single-process: determine port and bind server ---
-    const finalPort = chosenPort ?? (process.env.VEGAA_PORT ? Number(process.env.VEGAA_PORT) : await findAvailablePort(3000))
+    // --- Worker: bind to master's assigned VEGAA_PORT without probing ---
+    let finalPort: number
+    if (process.env.CLUSTER === 'true' && cluster.isWorker) {
+      if (!process.env.VEGAA_PORT) throw new Error('VEGAA_PORT not set in worker')
+      finalPort = Number(process.env.VEGAA_PORT)
+    } else {
+      // --- Single-process: if desiredPort is busy, fall back to next available ---
+      finalPort = await findAvailablePort(desiredPort ?? 3000)
+    }
 
     const sem = new Semaphore(Math.max(1, maxConcurrency))
 
