@@ -7,7 +7,13 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/example/app.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/example/app.js"
+    "start": "node dist/example/app.js",
+    "prepublishOnly": "npm run build && npm run test && git add . && git commit -m '📦 build: prepublish build' || echo 'No changes to commit'",
+    "release:patch": "npm version patch && npm publish --access public",
+    "release:minor": "npm version minor && npm publish --access public",
+    "release:major": "npm version major && npm publish --access public",
+    "release:dev": "npm publish --tag dev --access public",
+    "release:latest": "npm publish --tag latest --access public"
   },
   "license": "MIT",
   "devDependencies": {
