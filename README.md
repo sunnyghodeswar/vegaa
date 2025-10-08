@@ -31,15 +31,45 @@ app.get('/user/:id', (req, res) => {
 
 ### ⚡ Vegaa style
 ```js
-route('/user/:id').get((user, params) => ({
-  user,
-  id: params.id
-}))
+route('/user/:id').get((user, id) => ({ user,id }))
 ```
 
 No manual extraction.  
 No `req`/`res` juggling.  
 Just declare what you need — Vegaa injects the rest.
+
+---
+
+## 💡 Flattened Params & Smart Injection
+
+Vegaa automatically flattens route parameters — no need for `params.id`.
+
+```js
+route('/users/:id/posts/:postId').get((id, postId) => ({ id, postId }))
+```
+
+The Express equivalent looks like this 👇
+
+```js
+app.get('/users/:id/posts/:postId', (req, res) => {
+  const id = req.params.id
+  const postId = req.params.postId
+  res.json({ id, postId })
+})
+```
+
+For routes with body (POST, PUT, PATCH), Vegaa intelligently groups data to avoid conflicts:
+
+```js
+route('/users/:id').post((params, body) => ({
+  id: params.id,
+  ...body
+}))
+```
+
+✅ `params` → route parameters  
+✅ `body` → parsed request body  
+✅ `query`, `user`, and other middleware outputs auto-injected
 
 ---
 

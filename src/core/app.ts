@@ -222,6 +222,20 @@ export class App {
       // attach params
       ctx.params = params
 
+      // For GET and DELETE, flatten route params onto top-level ctx so handlers
+      // can declare signatures like (id) instead of (params).
+      // POST/PUT/PATCH keep grouped to avoid conflicts with body fields.
+      if (method === 'GET' || method === 'DELETE') {
+        if (params && typeof params === 'object') {
+          for (const key of Object.keys(params)) {
+            // avoid overwriting existing ctx keys
+            if ((ctx as any)[key] === undefined) {
+              ;(ctx as any)[key] = (params as any)[key]
+            }
+          }
+        }
+      }
+
       // route-level middleware
       await this.runMiddlewares(route.mws, ctx)
       if (ctx._ended) return
