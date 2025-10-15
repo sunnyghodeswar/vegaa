@@ -17,16 +17,12 @@ function parseLimit(limit: string | number | undefined): number {
 }
 
 /**
- * ⚡ Body Parser Middleware (Production-grade)
- * - Safely streams incoming payloads
- * - Prevents blocking event loop
- * - Enforces max body size
- * - Supports JSON, URL-encoded, text, and binary
- * - No double parsing if ctx.body already exists
+ * ⚡ Vegaa Body Parser Middleware (v2)
+ * ✅ Streams safely
+ * ✅ Auto-flattens body keys (no conflict with params)
  */
 export function bodyParser(opts?: BodyParserOptions): Handler {
   const limitBytes = parseLimit(opts?.limit)
-
   return async (ctx: any) => {
     const req = ctx.req
     const res = ctx.res
@@ -62,16 +58,11 @@ export function bodyParser(opts?: BodyParserOptions): Handler {
       })
 
       if (ctx._ended) return
-
       const rawBuffer = Buffer.concat(chunks)
       const rawString = rawBuffer.toString('utf8')
 
       if (contentType.includes('application/json')) {
-        try {
-          ctx.body = rawString ? JSON.parse(rawString) : {}
-        } catch {
-          ctx.body = {}
-        }
+        ctx.body = rawString ? JSON.parse(rawString) : {}
       } else if (contentType.includes('application/x-www-form-urlencoded')) {
         const params = new URLSearchParams(rawString)
         const data: Record<string, string> = {}
@@ -79,12 +70,18 @@ export function bodyParser(opts?: BodyParserOptions): Handler {
         ctx.body = data
       } else if (contentType.includes('text/plain')) {
         ctx.body = rawString
-      } else if (contentType.includes('application/octet-stream')) {
-        ctx.body = rawBuffer
       } else {
         ctx.body = rawBuffer
       }
-    } catch (err: any) {
+
+      // flatten into ctx (safe)
+      if (ctx.body && typeof ctx.body === 'object' && !Buffer.isBuffer(ctx.body)) {
+        for (const [key, val] of Object.entries(ctx.body)) {
+          if (['req', 'res', 'params', '_ended', 'body'].includes(key)) continue
+          if (ctx[key] === undefined) ctx[key] = val
+        }
+      }
+    } catch {
       if (!ctx._ended && !res.writableEnded) {
         res.statusCode = 400
         res.end(JSON.stringify({ error: 'Invalid request body' }))
@@ -94,14 +91,9 @@ export function bodyParser(opts?: BodyParserOptions): Handler {
   }
 }
 
-/**
- * ✅ Vegaa Body Parser Plugin
- * - Automatically adds the middleware globally
- * - Configurable via options (limit)
- */
 export const bodyParserPlugin = {
   name: 'bodyParser',
-  version: '1.0.0',
+  version: '2.0.0',
   register(app: any, opts?: BodyParserOptions) {
     app.middleware(bodyParser(opts))
   }
