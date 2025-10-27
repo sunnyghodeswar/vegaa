@@ -8,6 +8,8 @@ import type { request } from "undici";
 export type EnhancedServerResponse = http.ServerResponse & {
   json?: (data: any) => EnhancedServerResponse;
   send?: (data: any) => EnhancedServerResponse;
+  html?: (html: string) => EnhancedServerResponse;
+  text?: (text: string) => EnhancedServerResponse;
   status?: (code: number) => EnhancedServerResponse;
   type?: (mime: string) => EnhancedServerResponse;
 

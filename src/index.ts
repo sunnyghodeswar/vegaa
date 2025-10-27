@@ -17,6 +17,10 @@ import type { App } from './core/app'
 import { corsPlugin } from './plugins/cors'
 import { jsonPlugin } from './plugins/json'
 import { bodyParserPlugin } from './plugins/bodyParser'
+import { staticPlugin } from './plugins/static'
+
+// 🎨 Response Helpers (functional style)
+import { html, text, file } from './utils/response'
 
 // ----------------------------------------------------
 // 🧠 Global Singleton App
@@ -52,7 +56,12 @@ export const vegaa: VegaaApp = app as VegaaApp
 // ----------------------------------------------------
 // 🔌 Plugin Exports
 // ----------------------------------------------------
-export { corsPlugin, jsonPlugin, bodyParserPlugin }
+export { corsPlugin, jsonPlugin, bodyParserPlugin, staticPlugin }
+
+// ----------------------------------------------------
+// 🎨 Response Helper Exports
+// ----------------------------------------------------
+export { html, text, file }
 
 // ----------------------------------------------------
 // 🚀 Default Export (so `import vegaa from 'vegaa'` also works)

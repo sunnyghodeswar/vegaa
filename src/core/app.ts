@@ -25,6 +25,7 @@ import { extractParamNames, compileArgBuilder } from "../utils/params";
 import { Router } from "../router/adapter";
 import { findAvailablePort } from "../utils/port";
 import buildSerializer from "fast-json-stringify";
+import { HTML_RESPONSE, TEXT_RESPONSE, FILE_RESPONSE } from "../utils/response";
 
 // 🧱 Main Application Class
 export class App {
@@ -223,7 +224,39 @@ export class App {
 
       for (const h of this.hooks.onResponse) await Promise.resolve(h(ctx, responsePayload));
 
+      // Only send response if the handler hasn't already sent a response
       if (!ctx._ended && !res.writableEnded) {
+        // Check for special response types (html, text, file)
+        if (responsePayload && typeof responsePayload === 'object' && responsePayload._type) {
+          // Handle HTML response
+          if (responsePayload._type === HTML_RESPONSE) {
+            res.statusCode ||= 200;
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(responsePayload.content || '');
+            ctx._ended = true;
+            return;
+          }
+          // Handle text response
+          if (responsePayload._type === TEXT_RESPONSE) {
+            res.statusCode ||= 200;
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            res.end(responsePayload.content || '');
+            ctx._ended = true;
+            return;
+          }
+          // Handle file response
+          if (responsePayload._type === FILE_RESPONSE) {
+            // Note: File responses require additional handling
+            // For now, return 501 Not Implemented or delegate to static plugin
+            res.statusCode = 501;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'file() helper requires static plugin' }));
+            ctx._ended = true;
+            return;
+          }
+        }
+
+        // Default: JSON response
         res.statusCode ||= 200;
         res.setHeader("Content-Type", "application/json");
         const json =

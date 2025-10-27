@@ -25,3 +25,5 @@ export function isMiddleware(obj: any): obj is Function {
 export { jsonPlugin } from './plugins/json'
 export { corsPlugin } from './plugins/cors'
 export { bodyParserPlugin } from './plugins/bodyParser'
+export { staticPlugin } from './plugins/static'
+export { createStaticMiddleware } from './plugins/static'

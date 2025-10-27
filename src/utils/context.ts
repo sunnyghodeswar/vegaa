@@ -91,6 +91,24 @@ export function buildContext(
     return this
   }
 
+  enhanced.html = function (html: string) {
+    if (this.writableEnded) return this
+    if (!this.headersSent) this.setHeader('Content-Type', 'text/html; charset=utf-8')
+    this.end(html)
+    const ctx = (this as any)._ctxRef as Context | undefined
+    if (ctx) ctx._ended = true
+    return this
+  }
+
+  enhanced.text = function (text: string) {
+    if (this.writableEnded) return this
+    if (!this.headersSent) this.setHeader('Content-Type', 'text/plain; charset=utf-8')
+    this.end(text)
+    const ctx = (this as any)._ctxRef as Context | undefined
+    if (ctx) ctx._ended = true
+    return this
+  }
+
   /**
    * 🚫 Removed internal body parsing.
    * Let `bodyParser` plugin handle JSON, URL-encoded, and text bodies.

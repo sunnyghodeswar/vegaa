@@ -264,6 +264,73 @@ await vegaa.plugin(loggerPlugin)
 - 🧩 `jsonPlugin` — Adds `.json()` response helper  
 - 🧩 `bodyParserPlugin` — Parses incoming request bodies  
 - 🧩 `httpClientPlugin` — Adds `makeRequest()` powered by Undici  
+- 🧩 `staticPlugin` — Serves static files (HTML, CSS, JS, images)
+
+---
+
+## 🎨 Response Types
+
+Vegaa supports multiple response types through a clean, functional API:
+
+### HTML & Text Responses
+
+```js
+import { route, html, text } from 'vegaa'
+
+// HTML response
+route('/').get(() => {
+  return html('<h1>Hello World</h1>')
+})
+
+// Text response
+route('/status').get(() => {
+  return text('OK')
+})
+
+// With dynamic content
+route('/users/:id').get((id) => {
+  return html(`<h1>User ${id}</h1>`)
+})
+```
+
+### Static File Serving
+
+Serve static files using the `staticPlugin`:
+
+```js
+import { vegaa, staticPlugin } from 'vegaa'
+
+await vegaa.plugin(staticPlugin, {
+  root: './public',      // Directory to serve from
+  prefix: '/assets',    // URL prefix (optional)
+  cacheControl: 'public, max-age=3600'
+})
+
+// Files in ./public/ are now served at /assets/*
+```
+
+### Mixed Response Types
+
+You can mix HTML, text, and JSON responses in the same app:
+
+```js
+route('/api/data').get(() => {
+  return { data: 'value' }  // JSON (default)
+})
+
+route('/page').get(() => {
+  return html('<h1>HTML</h1>')  // HTML
+})
+
+route('/health').get(() => {
+  return text('OK')  // Plain text
+})
+```
+
+**Response Helpers:**
+- `html(content)` — Return HTML response
+- `text(content)` — Return text response  
+- Return objects naturally serialize to JSON
 
 ---
 
