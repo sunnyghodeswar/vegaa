@@ -3,11 +3,11 @@
 
 A modern Node.js framework with **automatic parameter injection** — delivering **Express-level simplicity** with **Fastify-level speed** and **Undici-grade networking**.
 
----
-
-🚧 **Status:** *Developer Preview (v0.2.1)*  
-> Core engine stable. APIs finalized for routing, middleware, and cluster modules.  
-> Now includes **HTTP Client plugin (`makeRequest`)** powered by Undici for ultra-fast outbound requests.
+[![npm version](https://badge.fury.io/js/vegaa.svg)](https://www.npmjs.com/package/vegaa)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/sunnyghodeswar/vegaa?style=social)](https://github.com/sunnyghodeswar/vegaa)
+[![GitHub issues](https://img.shields.io/github/issues/sunnyghodeswar/vegaa)](https://github.com/sunnyghodeswar/vegaa/issues)
+[![GitHub repo size](https://img.shields.io/github/repo-size/sunnyghodeswar/vegaa)](https://github.com/sunnyghodeswar/vegaa)
 
 ---
 
@@ -372,8 +372,12 @@ True parallel scaling — no configuration required.
 
 ## 👨‍💻 Author
 
-Made with ❤️ by **Sunny Ghodeswar**  
+Made with ❤️ by **[Sunny Ghodeswar](https://github.com/sunnyghodeswar)**  
 Senior Full-Stack Developer • Pune, India 🇮🇳  
+
+[⭐ Star Vegaa on GitHub](https://github.com/sunnyghodeswar/vegaa)  
+[📦 View on npm](https://www.npmjs.com/package/vegaa)  
+[🧰 Vegaa CLI](https://www.npmjs.com/package/vegaa-cli)  
 
 ---
 
@@ -382,5 +386,10 @@ Senior Full-Stack Developer • Pune, India 🇮🇳
 [MIT](LICENSE)
 
 ---
+<div align="center">
 
-> ⚡ **Vegaa — Named for velocity. Engineered for developers.**
+**⚡ Vegaa — Named for velocity. Engineered for developers.**  
+<br/>  
+[⭐ GitHub](https://github.com/sunnyghodeswar/vegaa) • [📦 npm](https://www.npmjs.com/package/vegaa) • [🧰 Vegaa CLI](https://www.npmjs.com/package/vegaa-cli)
+
+</div>

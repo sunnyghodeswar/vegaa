@@ -1,29 +1,55 @@
 {
   "name": "vegaa",
   "version": "1.0.0",
-  "description": "🔥 Vegaa — A lightning-fast, zero-boilerplate Node.js framework focused on speed, scalability, and pure developer joy.",
+  "description": "⚡ Vegaa — A lightning-fast, zero-boilerplate Node.js framework focused on speed, scalability, and pure developer joy.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist/",
+    "src/"
+  ],
+  "keywords": [
+    "vegaa",
+    "framework",
+    "nodejs",
+    "web-framework",
+    "fastify",
+    "express",
+    "context-injection",
+    "api",
+    "http",
+    "typescript",
+    "server"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sunnyghodeswar/vegaa"
+  },
+  "bugs": {
+    "url": "https://github.com/sunnyghodeswar/vegaa/issues"
+  },
+  "homepage": "https://github.com/sunnyghodeswar/vegaa#readme",
+  "author": "Sunny Ghodeswar",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/example/app.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/example/app.js",
-    "prepublishOnly": "npm run build && npm run test && git add . && git commit -m '📦 build: prepublish build' || echo 'No changes to commit'",
-    "release:patch": "npm version patch && npm publish --access public",
-    "release:minor": "npm version minor && npm publish --access public",
-    "release:major": "npm version major && npm publish --access public",
-    "release:dev": "npm publish --tag dev --access public",
-    "release:latest": "npm publish --tag latest --access public"
-  },
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^24.7.0",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.0.0"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "fast-json-stringify": "^6.1.1",
     "find-my-way": "^9.3.0",
     "undici": "^7.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.0.0"
   }
 }
