@@ -1,4 +1,11 @@
-# Vegaa ⚡
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sunnyghodeswar/vegaa/ad0a22231d5ec5667465e85272eef57590c82fc6/assets/vegaa-banner.png" 
+       alt="Vegaa Banner" 
+       width="100%" />
+</p>
+
+# Vegaa
+
 
 **A modern Node.js framework that makes backend development simple and fast**
 
