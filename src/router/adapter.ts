@@ -34,7 +34,7 @@ export class Router {
     this.r = FindMyWay<HTTPVersion.V1>({
       ignoreTrailingSlash: true,
       allowUnsafeRegex: false,
-      defaultRoute: (_req, res) => {
+      defaultRoute: (_req: IncomingMessage, res: ServerResponse) => {
         if (!res.writableEnded) {
           res.statusCode = 404;
           res.setHeader("Content-Type", "application/json");

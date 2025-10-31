@@ -2,10 +2,14 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "CommonJS",
+    "moduleResolution": "Node",
     "outDir": "dist/cjs",
     "declaration": false,
-    "declarationMap": false
-  }
+    "declarationMap": false,
+    "types": ["node"],
+    "allowSyntheticDefaultImports": true
+  },
+  "exclude": ["src/example/**"]
 }
 
 

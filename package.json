@@ -45,7 +45,7 @@
   },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/example/app.ts",
-    "build": "rm -rf dist && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && node ./scripts/postbuild.cjs",
+    "build": "rm -rf dist && tsc -p tsconfig.esm.json && node ./scripts/fix-esm-extensions.cjs && tsc -p tsconfig.cjs.json && node ./scripts/postbuild.cjs",
     "start": "node dist/esm/example/app.js",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build"

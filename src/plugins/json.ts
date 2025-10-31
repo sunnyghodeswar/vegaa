@@ -31,7 +31,7 @@ export const jsonMiddleware: Handler = async (ctx : Context) => {
   try {
     let raw = ''
     await new Promise<void>((resolve, reject) => {
-      req.on('data', (chunk) => (raw += chunk))
+      req.on('data', (chunk: any) => (raw += chunk))
       req.on('end', () => resolve())
       req.on('error', reject)
     })
