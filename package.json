@@ -2,9 +2,17 @@
   "name": "vegaa",
   "version": "1.1.0",
   "description": "⚡ Vegaa — A lightning-fast, zero-boilerplate Node.js framework focused on speed, scalability, and pure developer joy.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/esm/index.d.ts"
+    }
+  },
   "files": [
     "dist/",
     "src/"
@@ -37,8 +45,8 @@
   },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/example/app.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/example/app.js",
+    "build": "rm -rf dist && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && node ./scripts/postbuild.cjs",
+    "start": "node dist/esm/example/app.js",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build"
   },
