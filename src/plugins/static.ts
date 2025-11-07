@@ -15,6 +15,15 @@
 import fs from 'fs/promises'
 import path from 'path'
 import type { Context, Handler } from '../core/types'
+import buildSerializer from 'fast-json-stringify'
+
+// Pre-compiled serializer for error responses (performance optimization)
+const forbiddenSerializer = buildSerializer({
+  type: 'object',
+  properties: {
+    error: { type: 'string' }
+  }
+});
 
 // Common MIME types
 const MIME_TYPES: Record<string, string> = {
@@ -166,7 +175,7 @@ export function createStaticMiddleware(rootDir: string, options?: {
       if (!isSafe) {
         ctx.res.statusCode = 403
         ctx.res.setHeader('Content-Type', 'application/json')
-        ctx.res.end(JSON.stringify({ error: 'Forbidden' }))
+        ctx.res.end(forbiddenSerializer({ error: 'Forbidden' }))
         ctx._ended = true
         return
       }

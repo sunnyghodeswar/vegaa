@@ -40,13 +40,13 @@ if (process.env.VEGAA_EXPRESS_COMPAT === '1' || process.env.VEGAA_EXPRESS_COMPAT
 
 // Extend its type so TypeScript knows about the sugar method.
 export interface VegaaApp extends App {
-  startVegaaServer(opts?: { port?: number; maxConcurrency?: number }): Promise<void>
+  startVegaaServer(opts?: { port?: number; maxConcurrency?: number; cluster?: boolean }): Promise<void>
 }
 
 // Attach the sugar method with proper `this` binding.
 ;(app as VegaaApp).startVegaaServer = async function (
   this: App,
-  opts?: { port?: number; maxConcurrency?: number }
+  opts?: { port?: number; maxConcurrency?: number; cluster?: boolean }
 ) {
   return this.startServer(opts)
 }

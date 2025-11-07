@@ -31,6 +31,7 @@ export function buildContext(
   req: http.IncomingMessage,
   res: http.ServerResponse
 ): Context {
+  // Optimized URL parsing (avoid URLSearchParams overhead when possible)
   const rawUrl = req.url || '/'
   let pathname = '/'
   let query: Record<string, string> = {}
@@ -41,24 +42,45 @@ export function buildContext(
     pathname = rawUrl.slice(0, qIndex)
     const search = rawUrl.slice(qIndex + 1)
     if (search.length > 0) {
-      const sp = new URLSearchParams(search)
-      const q: Record<string, string> = {}
-      sp.forEach((v, k) => (q[k] = v))
-      query = q
+      // Fast path: simple query strings without special encoding
+      if (search.indexOf('%') === -1 && search.indexOf('+') === -1) {
+        const pairs = search.split('&')
+        const q: Record<string, string> = {}
+        for (let i = 0; i < pairs.length; i++) {
+          const pair = pairs[i]
+          const eqIndex = pair.indexOf('=')
+          if (eqIndex > 0) {
+            q[pair.slice(0, eqIndex)] = pair.slice(eqIndex + 1)
+          } else if (pair.length > 0) {
+            q[pair] = ''
+          }
+        }
+        query = q
+      } else {
+        // Fallback to URLSearchParams for encoded query strings
+        const sp = new URLSearchParams(search)
+        const q: Record<string, string> = {}
+        sp.forEach((v, k) => (q[k] = v))
+        query = q
+      }
     }
   }
 
   const enhanced = res as EnhancedServerResponse
 
-  // Response helpers
-  enhanced.status = function (code: number) {
-    if (!this.writableEnded) this.statusCode = code
-    return this
-  }
+  // Response helpers (optimized: reuse function references to avoid per-request function creation)
+  // Only attach if not already attached (reuse existing functions)
+  if (!(enhanced as any)._vegaaEnhanced) {
+    enhanced.status = function (code: number) {
+      if (!this.writableEnded) this.statusCode = code
+      return this
+    }
 
-  enhanced.type = function (mime: string) {
-    if (!this.writableEnded && !this.headersSent) this.setHeader('Content-Type', mime)
-    return this
+    enhanced.type = function (mime: string) {
+      if (!this.writableEnded && !this.headersSent) this.setHeader('Content-Type', mime)
+      return this
+    }
+    ;(enhanced as any)._vegaaEnhanced = true
   }
 
   // Helper to clean up context reference when response ends
@@ -71,48 +93,52 @@ export function buildContext(
     }
   }
 
-  enhanced.json = function (data: any) {
-    if (this.writableEnded) return this
-    if (!this.headersSent) this.setHeader('Content-Type', 'application/json')
-    try {
-      this.end(typeof data === 'string' ? data : JSON.stringify(data))
-    } catch {
-      try { this.end('{"error":"serialization failed"}') } catch {}
-    }
-    cleanupContextRef(this)
-    return this
-  }
-
-  enhanced.send = function (data: any) {
-    if (this.writableEnded) return this
-    if (typeof data === 'object' && !Buffer.isBuffer(data)) {
+  // Only attach helper functions if not already attached (reuse existing)
+  if (!(enhanced as any)._vegaaHelpers) {
+    enhanced.json = function (data: any) {
+      if (this.writableEnded) return this
       if (!this.headersSent) this.setHeader('Content-Type', 'application/json')
       try {
-        this.end(JSON.stringify(data))
+        this.end(typeof data === 'string' ? data : JSON.stringify(data))
       } catch {
         try { this.end('{"error":"serialization failed"}') } catch {}
       }
-    } else {
-      this.end(data)
+      cleanupContextRef(this)
+      return this
     }
-    cleanupContextRef(this)
-    return this
-  }
 
-  enhanced.html = function (html: string) {
-    if (this.writableEnded) return this
-    if (!this.headersSent) this.setHeader('Content-Type', 'text/html; charset=utf-8')
-    this.end(html)
-    cleanupContextRef(this)
-    return this
-  }
+    enhanced.send = function (data: any) {
+      if (this.writableEnded) return this
+      if (typeof data === 'object' && !Buffer.isBuffer(data) && data !== null) {
+        if (!this.headersSent) this.setHeader('Content-Type', 'application/json')
+        try {
+          this.end(JSON.stringify(data))
+        } catch {
+          try { this.end('{"error":"serialization failed"}') } catch {}
+        }
+      } else {
+        this.end(data)
+      }
+      cleanupContextRef(this)
+      return this
+    }
 
-  enhanced.text = function (text: string) {
-    if (this.writableEnded) return this
-    if (!this.headersSent) this.setHeader('Content-Type', 'text/plain; charset=utf-8')
-    this.end(text)
-    cleanupContextRef(this)
-    return this
+    enhanced.html = function (html: string) {
+      if (this.writableEnded) return this
+      if (!this.headersSent) this.setHeader('Content-Type', 'text/html; charset=utf-8')
+      this.end(html)
+      cleanupContextRef(this)
+      return this
+    }
+
+    enhanced.text = function (text: string) {
+      if (this.writableEnded) return this
+      if (!this.headersSent) this.setHeader('Content-Type', 'text/plain; charset=utf-8')
+      this.end(text)
+      cleanupContextRef(this)
+      return this
+    }
+    ;(enhanced as any)._vegaaHelpers = true
   }
 
   // Also clean up on response 'finish' event as a safety measure

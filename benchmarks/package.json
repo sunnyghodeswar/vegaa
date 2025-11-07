@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "bench": "node run-all.js",
+    "quick": "node quick-get.js",
     "bench:simple": "node simple-get.js",
     "bench:params": "node route-params.js",
     "bench:json": "node json-parsing.js",

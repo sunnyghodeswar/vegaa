@@ -55,7 +55,8 @@ export class Router {
         res: ServerResponse,
         params: Record<string, string> | undefined
       ) => {
-        await Promise.resolve(handler(req, res, params ?? {}))
+        const result = handler(req, res, params ?? {})
+        if (result instanceof Promise) await result
       }
     )
   }
@@ -71,7 +72,8 @@ export class Router {
     const fwHandler = found.handler as any
     const routeHandler: RawHandler = async (req, res, params) => {
       // Call the stored handler (it will be the wrapper we created in `on`)
-      return await Promise.resolve(fwHandler(req, res, params))
+      const result = fwHandler(req, res, params)
+      if (result instanceof Promise) return await result
     }
     return { handler: routeHandler, params: found.params ?? {}, store: (found as any).store }
   }

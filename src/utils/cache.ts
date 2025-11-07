@@ -6,9 +6,16 @@
  * - Max size limit with LRU eviction
  * - Periodic cleanup task
  * - Key validation to prevent injection
+ * - Cluster-aware: Uses IPC for shared cache across workers
  */
 
-type CacheEntry = { data: any; time: number; accessTime: number }
+import { 
+  clusterCacheGet, 
+  clusterCacheSet, 
+  isClusterCacheAvailable 
+} from './clusterCache'
+
+export type CacheEntry = { data: any; time: number; accessTime: number }
 const cache = new Map<string, CacheEntry>()
 
 // Configuration
@@ -112,6 +119,16 @@ export async function cacheGetOrSet(key: string, ttl: number, fn: () => Promise<
   startCleanup()
   
   const now = Date.now()
+  
+  // Try cluster cache first (if in cluster mode)
+  if (isClusterCacheAvailable()) {
+    const clusterData = await clusterCacheGet(key, ttl)
+    if (clusterData !== null) {
+      return clusterData
+    }
+  }
+  
+  // Fallback to local cache
   const entry = cache.get(key)
   
   // Check if entry exists and is not expired
@@ -152,7 +169,12 @@ export async function cacheGetOrSet(key: string, ttl: number, fn: () => Promise<
         }
       }
       
-      // Store new entry
+      // Store in cluster cache first (if available)
+      if (isClusterCacheAvailable()) {
+        await clusterCacheSet(key, data)
+      }
+      
+      // Also store locally (for fallback and single-process mode)
       cache.set(key, { data, time: now, accessTime: now })
       
       return data

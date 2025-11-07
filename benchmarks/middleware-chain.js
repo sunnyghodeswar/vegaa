@@ -6,9 +6,11 @@
 import autocannon from 'autocannon'
 import express from 'express'
 import Fastify from 'fastify'
+import cluster from 'cluster'
 import { vegaa, route } from '../dist/esm/index.js'
 
 const PORT_VEGAA = 3001
+const PORT_VEGAA_CLUSTER = 3004
 const PORT_EXPRESS = 3002
 const PORT_FASTIFY = 3003
 
@@ -89,8 +91,19 @@ async function runBenchmark(name, port) {
 
 async function startServer(name, port) {
   if (name === 'Vegaa') {
-    await vegaa.startVegaaServer({ port })
+    await vegaa.startVegaaServer({ port, cluster: false })
     console.log(`✅ ${name} started on port ${port}`)
+    return vegaa
+  } else if (name === 'Vegaa Cluster') {
+    const originalEnv = process.env.NODE_ENV
+    process.env.NODE_ENV = 'production'
+    process.env.CLUSTER = 'true'
+    process.env.BENCHMARK_MODE = 'true'
+    await vegaa.startVegaaServer({ port, cluster: true })
+    process.env.NODE_ENV = originalEnv
+    console.log(`✅ ${name} started on port ${port} (cluster mode)`)
+    // Wait for workers to be ready (2.5s to ensure all workers are listening)
+    await new Promise(resolve => setTimeout(resolve, 2500))
     return vegaa
   } else if (name === 'Express') {
     return new Promise((resolve) => {
@@ -109,6 +122,18 @@ async function startServer(name, port) {
 async function stopServer(server) {
   if (!server) return
   
+  // Handle cluster mode shutdown
+  if (process.env.CLUSTER === 'true' && cluster.isPrimary) {
+    for (const id in cluster.workers) {
+      const worker = cluster.workers[id]
+      if (worker) worker.kill('SIGTERM')
+    }
+    await new Promise(resolve => setTimeout(resolve, 500))
+    delete process.env.CLUSTER
+    delete process.env.VEGAA_PORT
+    return
+  }
+  
   if (server.close && typeof server.close === 'function') {
     return new Promise((resolve) => {
       server.close(() => resolve())
@@ -123,6 +148,11 @@ async function stopServer(server) {
 }
 
 async function main() {
+  // Skip benchmark in worker processes (cluster mode)
+  if (process.env.CLUSTER === 'true' && cluster.isWorker) {
+    return
+  }
+  
   console.log('🚀 Starting Middleware Chain Benchmark\n')
   console.log('='.repeat(60))
   
@@ -134,6 +164,9 @@ async function main() {
     results.push(await runBenchmark('Vegaa', PORT_VEGAA))
     await new Promise(resolve => setTimeout(resolve, 500))
     
+    results.push(await runBenchmark('Vegaa Cluster', PORT_VEGAA_CLUSTER))
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
     results.push(await runBenchmark('Express', PORT_EXPRESS))
     await new Promise(resolve => setTimeout(resolve, 500))
     
@@ -142,15 +175,19 @@ async function main() {
     console.error('Error during benchmark:', err)
   }
   
-  console.log('\n' + '='.repeat(60))
+  console.log('\n' + '='.repeat(80))
   console.log('📊 BENCHMARK RESULTS: Middleware Chain')
-  console.log('='.repeat(60))
+  console.log('='.repeat(80))
+  
+  console.log('\n' + 'Framework'.padEnd(20) + 'Requests/sec'.padEnd(18) + 'Avg Latency'.padEnd(15) + 'P99 Latency')
+  console.log('-'.repeat(80))
   
   results.forEach(result => {
-    console.log(`\n${result.name}:`)
-    console.log(`  Requests/sec: ${result.requests.average.toFixed(2)}`)
-    console.log(`  Avg Latency: ${result.latency.average.toFixed(2)}ms`)
-    console.log(`  P99 Latency: ${result.latency.p99.toFixed(2)}ms`)
+    const name = result.name.padEnd(20)
+    const reqs = result.requests.average.toFixed(2).padEnd(18)
+    const avgLat = `${result.latency.average.toFixed(2)}ms`.padEnd(15)
+    const p99Lat = `${result.latency.p99.toFixed(2)}ms`
+    console.log(`${name}${reqs}${avgLat}${p99Lat}`)
   })
   
   const winner = results.reduce((a, b) => 
@@ -158,6 +195,29 @@ async function main() {
   )
   
   console.log(`\n🏆 Winner: ${winner.name} (${winner.requests.average.toFixed(2)} req/s)`)
+  
+  const expressResult = results.find(r => r.name === 'Express')
+  const vegaaResult = results.find(r => r.name === 'Vegaa')
+  const vegaaClusterResult = results.find(r => r.name === 'Vegaa Cluster')
+  const fastifyResult = results.find(r => r.name === 'Fastify')
+  
+  console.log('\n📈 Performance Comparison:')
+  if (expressResult && vegaaResult) {
+    const improvement = ((vegaaResult.requests.average / expressResult.requests.average - 1) * 100).toFixed(1)
+    console.log(`   Vegaa vs Express: ${improvement > 0 ? '+' : ''}${improvement}%`)
+  }
+  if (expressResult && vegaaClusterResult) {
+    const improvement = ((vegaaClusterResult.requests.average / expressResult.requests.average - 1) * 100).toFixed(1)
+    console.log(`   Vegaa Cluster vs Express: ${improvement > 0 ? '+' : ''}${improvement}%`)
+  }
+  if (fastifyResult && vegaaClusterResult) {
+    const improvement = ((vegaaClusterResult.requests.average / fastifyResult.requests.average - 1) * 100).toFixed(1)
+    console.log(`   Vegaa Cluster vs Fastify: ${improvement > 0 ? '+' : ''}${improvement}%`)
+  }
+  if (vegaaResult && vegaaClusterResult) {
+    const improvement = ((vegaaClusterResult.requests.average / vegaaResult.requests.average - 1) * 100).toFixed(1)
+    console.log(`   Vegaa Cluster vs Vegaa: ${improvement > 0 ? '+' : ''}${improvement}%`)
+  }
   
   process.exit(0)
 }

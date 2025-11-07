@@ -1,4 +1,27 @@
 import type { Handler } from '../core/types'
+import buildSerializer from 'fast-json-stringify'
+
+// Pre-compiled serializers for error responses (performance optimization)
+const payloadLimitSerializer = buildSerializer({
+  type: 'object',
+  properties: {
+    error: { type: 'string' }
+  }
+});
+
+const invalidJsonSerializer = buildSerializer({
+  type: 'object',
+  properties: {
+    error: { type: 'string' }
+  }
+});
+
+const invalidBodySerializer = buildSerializer({
+  type: 'object',
+  properties: {
+    error: { type: 'string' }
+  }
+});
 
 export type BodyParserOptions = { limit?: string | number }
 
@@ -85,11 +108,11 @@ export function bodyParser(opts?: BodyParserOptions): Handler {
               req.destroy()
             }
             
-            // Send error response if not already sent
+            // Send error response if not already sent (optimized: use fast-json-stringify)
             if (!res.writableEnded && !ctx._ended) {
               res.statusCode = 413
               res.setHeader('Content-Type', 'application/json')
-              res.end(JSON.stringify({ 
+              res.end(payloadLimitSerializer({ 
                 error: `Payload too large (limit: ${limitBytes} bytes, received: ${totalSize} bytes)` 
               }))
               ctx._ended = true
@@ -144,7 +167,7 @@ export function bodyParser(opts?: BodyParserOptions): Handler {
           if (!res.writableEnded && !ctx._ended) {
             res.statusCode = 400
             res.setHeader('Content-Type', 'application/json')
-            res.end(JSON.stringify({ error: 'Invalid JSON' }))
+            res.end(invalidJsonSerializer({ error: 'Invalid JSON' }))
             ctx._ended = true
           }
           throw parseErr
@@ -185,7 +208,7 @@ export function bodyParser(opts?: BodyParserOptions): Handler {
       // Otherwise, send error response
       res.statusCode = 400
       res.setHeader('Content-Type', 'application/json')
-      res.end(JSON.stringify({ error: 'Invalid request body' }))
+      res.end(invalidBodySerializer({ error: 'Invalid request body' }))
       ctx._ended = true
       
       // Propagate error to error handlers
