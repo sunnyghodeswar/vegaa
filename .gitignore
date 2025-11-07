@@ -105,3 +105,6 @@ docker-compose.override.yml
 
 # Misc
 *.local
+
+# Analysis and documentation
+docs/analysis/

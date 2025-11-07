@@ -2,6 +2,9 @@ import type { Handler } from '../core/types'
 
 export type BodyParserOptions = { limit?: string | number }
 
+/**
+ * Parse size limit string/number to bytes
+ */
 function parseLimit(limit: string | number | undefined): number {
   if (!limit) return 1_000_000
   if (typeof limit === 'number') return limit
@@ -17,52 +20,135 @@ function parseLimit(limit: string | number | undefined): number {
 }
 
 /**
- * ⚡ Vegaa Body Parser Middleware (v2)
- * ✅ Streams safely
- * ✅ Auto-flattens body keys (no conflict with params)
+ * ⚡ Vegaa Body Parser Middleware
+ * 
+ * Features:
+ * - Streams request body safely
+ * - Enforces payload size limits
+ * - Supports JSON, URL-encoded, and text bodies
+ * - Auto-flattens body keys into context (no conflict with params)
+ * - Proper error handling and cleanup
  */
 export function bodyParser(opts?: BodyParserOptions): Handler {
   const limitBytes = parseLimit(opts?.limit)
+  
   return async (ctx: any) => {
     const req = ctx.req
     const res = ctx.res
     const method = (req.method || 'GET').toUpperCase()
 
-    if (method === 'GET' || method === 'HEAD') return
-    if (ctx.body !== undefined) return
+    // Skip GET/HEAD requests
+    if (method === 'GET' || method === 'HEAD') {
+      return
+    }
+    
+    // Skip if body already parsed
+    if (ctx.body !== undefined) {
+      return
+    }
 
+    // Skip if no content-type header
     const contentType = (req.headers['content-type'] || '').toLowerCase()
-    if (!contentType) return
+    if (!contentType) {
+      return
+    }
 
+    // Stream and parse request body
     try {
       const chunks: Buffer[] = []
-      let size = 0
+      let totalSize = 0
+      let hasError = false
+      let error: Error | null = null
 
+      // Create promise to handle async stream reading
       await new Promise<void>((resolve, reject) => {
-        req.on('data', (chunk: Buffer) => {
-          size += chunk.length
-          if (size > limitBytes) {
-            req.destroy()
-            if (!res.writableEnded) {
-              res.statusCode = 413
-              res.end(JSON.stringify({ error: `Payload too large (${limitBytes} bytes)` }))
+        // Event handler cleanup function
+        const cleanup = () => {
+          if (typeof req.removeListener === 'function') {
+            req.removeListener('data', onData)
+            req.removeListener('end', onEnd)
+            req.removeListener('error', onError)
+          }
+        }
+
+        // Handle data chunks
+        const onData = (chunk: Buffer) => {
+          // Check payload size limit
+          totalSize += chunk.length
+          if (totalSize > limitBytes) {
+            hasError = true
+            error = new Error('Payload limit exceeded')
+            cleanup()
+            
+            // Stop reading from stream
+            if (typeof req.destroy === 'function') {
+              req.destroy()
             }
-            ctx._ended = true
-            reject(new Error('Payload limit exceeded'))
+            
+            // Send error response if not already sent
+            if (!res.writableEnded && !ctx._ended) {
+              res.statusCode = 413
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ 
+                error: `Payload too large (limit: ${limitBytes} bytes, received: ${totalSize} bytes)` 
+              }))
+              ctx._ended = true
+            }
+            
+            // Reject promise to propagate error
+            reject(error)
             return
           }
+          
+          // Accumulate chunk
           chunks.push(chunk)
-        })
-        req.on('end', () => resolve())
-        req.on('error', reject)
+        }
+
+        // Handle stream end
+        const onEnd = () => {
+          cleanup()
+          
+          // Only resolve if no error occurred
+          if (!hasError && !error) {
+            resolve()
+          }
+          // If error occurred, promise should have already been rejected
+        }
+
+        // Handle stream errors
+        const onError = (err: Error) => {
+          hasError = true
+          error = err
+          cleanup()
+          
+          // Always reject on stream error
+          reject(err)
+        }
+
+        // Register event listeners
+        req.on('data', onData)
+        req.on('end', onEnd)
+        req.on('error', onError)
       })
 
-      if (ctx._ended) return
+      // If we reach here, stream completed successfully
+      // Parse body based on content type
       const rawBuffer = Buffer.concat(chunks)
       const rawString = rawBuffer.toString('utf8')
 
       if (contentType.includes('application/json')) {
-        ctx.body = rawString ? JSON.parse(rawString) : {}
+        try {
+          ctx.body = rawString ? JSON.parse(rawString) : {}
+        } catch (parseErr) {
+          // Invalid JSON - send error response
+          if (!res.writableEnded && !ctx._ended) {
+            res.statusCode = 400
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ error: 'Invalid JSON' }))
+            ctx._ended = true
+          }
+          throw parseErr
+        }
       } else if (contentType.includes('application/x-www-form-urlencoded')) {
         const params = new URLSearchParams(rawString)
         const data: Record<string, string> = {}
@@ -74,19 +160,36 @@ export function bodyParser(opts?: BodyParserOptions): Handler {
         ctx.body = rawBuffer
       }
 
-      // flatten into ctx (safe)
+      // Flatten body keys into context (safe - no conflict with reserved keys)
       if (ctx.body && typeof ctx.body === 'object' && !Buffer.isBuffer(ctx.body)) {
         for (const [key, val] of Object.entries(ctx.body)) {
-          if (['req', 'res', 'params', '_ended', 'body'].includes(key)) continue
-          if (ctx[key] === undefined) ctx[key] = val
+          // Skip reserved context keys
+          if (['req', 'res', 'params', '_ended', 'body'].includes(key)) {
+            continue
+          }
+          // Only set if key doesn't already exist in context
+          if (ctx[key] === undefined) {
+            ctx[key] = val
+          }
         }
       }
-    } catch {
-      if (!ctx._ended && !res.writableEnded) {
-        res.statusCode = 400
-        res.end(JSON.stringify({ error: 'Invalid request body' }))
-        ctx._ended = true
+    } catch (err: any) {
+      // Handle errors from stream reading or parsing
+      
+      // If response was already sent (e.g., payload limit exceeded),
+      // just propagate the error
+      if (ctx._ended || res.writableEnded) {
+        throw err
       }
+      
+      // Otherwise, send error response
+      res.statusCode = 400
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Invalid request body' }))
+      ctx._ended = true
+      
+      // Propagate error to error handlers
+      throw err
     }
   }
 }

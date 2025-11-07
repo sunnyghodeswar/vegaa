@@ -22,6 +22,9 @@ import { staticPlugin } from './plugins/static'
 // 🎨 Response Helpers (functional style)
 import { html, text, file } from './utils/response'
 
+// 🌿 Express Compatibility
+import { enableExpressCompat } from './core/expressCompat'
+
 // ----------------------------------------------------
 // 🧠 Global Singleton App
 // ----------------------------------------------------
@@ -29,6 +32,11 @@ import { html, text, file } from './utils/response'
 // Create the one-and-only global instance.
 // Everything (routes, middleware, plugins) attach to this.
 const app = createApp()
+
+// Auto-enable Express compatibility if environment variable is set
+if (process.env.VEGAA_EXPRESS_COMPAT === '1' || process.env.VEGAA_EXPRESS_COMPAT === 'true') {
+  enableExpressCompat(app)
+}
 
 // Extend its type so TypeScript knows about the sugar method.
 export interface VegaaApp extends App {
@@ -57,6 +65,11 @@ export const vegaa: VegaaApp = app as VegaaApp
 // 🔌 Plugin Exports
 // ----------------------------------------------------
 export { corsPlugin, jsonPlugin, bodyParserPlugin, staticPlugin }
+
+// ----------------------------------------------------
+// 🌿 Express Compatibility Export
+// ----------------------------------------------------
+export { enableExpressCompat }
 
 // ----------------------------------------------------
 // 🎨 Response Helper Exports

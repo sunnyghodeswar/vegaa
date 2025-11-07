@@ -61,6 +61,16 @@ export function buildContext(
     return this
   }
 
+  // Helper to clean up context reference when response ends
+  const cleanupContextRef = (res: EnhancedServerResponse) => {
+    const ctx = (res as any)._ctxRef as Context | undefined
+    if (ctx) {
+      ctx._ended = true
+      // Clean up the reference to prevent memory leak
+      delete (res as any)._ctxRef
+    }
+  }
+
   enhanced.json = function (data: any) {
     if (this.writableEnded) return this
     if (!this.headersSent) this.setHeader('Content-Type', 'application/json')
@@ -69,8 +79,7 @@ export function buildContext(
     } catch {
       try { this.end('{"error":"serialization failed"}') } catch {}
     }
-    const ctx = (this as any)._ctxRef as Context | undefined
-    if (ctx) ctx._ended = true
+    cleanupContextRef(this)
     return this
   }
 
@@ -86,8 +95,7 @@ export function buildContext(
     } else {
       this.end(data)
     }
-    const ctx = (this as any)._ctxRef as Context | undefined
-    if (ctx) ctx._ended = true
+    cleanupContextRef(this)
     return this
   }
 
@@ -95,8 +103,7 @@ export function buildContext(
     if (this.writableEnded) return this
     if (!this.headersSent) this.setHeader('Content-Type', 'text/html; charset=utf-8')
     this.end(html)
-    const ctx = (this as any)._ctxRef as Context | undefined
-    if (ctx) ctx._ended = true
+    cleanupContextRef(this)
     return this
   }
 
@@ -104,9 +111,15 @@ export function buildContext(
     if (this.writableEnded) return this
     if (!this.headersSent) this.setHeader('Content-Type', 'text/plain; charset=utf-8')
     this.end(text)
-    const ctx = (this as any)._ctxRef as Context | undefined
-    if (ctx) ctx._ended = true
+    cleanupContextRef(this)
     return this
+  }
+
+  // Also clean up on response 'finish' event as a safety measure
+  if (typeof enhanced.once === 'function') {
+    enhanced.once('finish', function(this: typeof enhanced) {
+      cleanupContextRef(this)
+    })
   }
 
   /**
