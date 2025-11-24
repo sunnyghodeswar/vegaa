@@ -22,6 +22,9 @@ import { staticPlugin } from './plugins/static'
 // 🎨 Response Helpers (functional style)
 import { html, text, file } from './utils/response'
 
+// 🌿 Express Compatibility
+import { enableExpressCompat } from './core/expressCompat'
+
 // ----------------------------------------------------
 // 🧠 Global Singleton App
 // ----------------------------------------------------
@@ -30,16 +33,39 @@ import { html, text, file } from './utils/response'
 // Everything (routes, middleware, plugins) attach to this.
 const app = createApp()
 
-// Extend its type so TypeScript knows about the sugar method.
+// Auto-enable Express compatibility if environment variable is set
+if (process.env.VEGAA_EXPRESS_COMPAT === '1' || process.env.VEGAA_EXPRESS_COMPAT === 'true') {
+  enableExpressCompat(app)
+}
+
+// Extend its type so TypeScript knows about the sugar method and Express compatibility
 export interface VegaaApp extends App {
-  startVegaaServer(opts?: { port?: number; maxConcurrency?: number }): Promise<void>
+  startVegaaServer(opts?: { port?: number; maxConcurrency?: number; cluster?: boolean }): Promise<void>
+  useExpressMiddleware?(
+    pathOrMiddleware: string | ((req: any, res: any, next: (err?: any) => void) => void | Promise<void>) | ((err: any, req: any, res: any, next: (err?: any) => void) => void | Promise<void>),
+    middleware?: (req: any, res: any, next: (err?: any) => void) => void | Promise<void>
+  ): App
+}
+
+// Type guard to ensure useExpressMiddleware exists
+declare module './core/app' {
+  interface App {
+    useExpressMiddleware?(
+      pathOrMiddleware: string | ((req: any, res: any, next: (err?: any) => void) => void | Promise<void>) | ((err: any, req: any, res: any, next: (err?: any) => void) => void | Promise<void>),
+      middleware?: (req: any, res: any, next: (err?: any) => void) => void | Promise<void>
+    ): App
+  }
 }
 
 // Attach the sugar method with proper `this` binding.
 ;(app as VegaaApp).startVegaaServer = async function (
   this: App,
-  opts?: { port?: number; maxConcurrency?: number }
+  opts?: { port?: number; maxConcurrency?: number; cluster?: boolean }
 ) {
+  // Set cluster mode from options if provided
+  if (opts?.cluster !== undefined) {
+    process.env.CLUSTER = opts.cluster ? 'true' : 'false'
+  }
   return this.startServer(opts)
 }
 
@@ -57,6 +83,11 @@ export const vegaa: VegaaApp = app as VegaaApp
 // 🔌 Plugin Exports
 // ----------------------------------------------------
 export { corsPlugin, jsonPlugin, bodyParserPlugin, staticPlugin }
+
+// ----------------------------------------------------
+// 🌿 Express Compatibility Export
+// ----------------------------------------------------
+export { enableExpressCompat }
 
 // ----------------------------------------------------
 // 🎨 Response Helper Exports

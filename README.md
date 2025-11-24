@@ -22,6 +22,7 @@
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
 - [Core Concepts](#-core-concepts)
+- [Express Middleware Compatibility](#-express-middleware-compatibility)
 - [Middleware System](#-middleware-system)
 - [Built-in Plugins](#-built-in-plugins)
 - [Features](#-features)
@@ -56,6 +57,18 @@ route('/user/:id').get((user, id) => ({ user, id }))
 ```
 
 **No manual extraction. No `req`/`res` juggling. Just clean, readable code.**
+
+### Express Compatibility Without Compromise
+
+Need Express middleware? Use it seamlessly:
+
+```js
+enableExpressCompat(vegaa)
+vegaa.useExpressMiddleware(helmet())
+route('/users/:id').get((id) => ({ userId: id }))  // Still clean!
+```
+
+**Vegaa's DNA stays intact** — minimalism and context integration, with Express middleware support when you need it.
 
 ---
 
@@ -274,6 +287,61 @@ await vegaa.plugin(loggerPlugin)
 
 ## ✨ Features
 
+### 🔌 Express Middleware Compatibility
+
+Use any Express middleware with Vegaa's minimal API — no compromises:
+
+```js
+import { vegaa, route, enableExpressCompat } from 'vegaa'
+import helmet from 'helmet'
+import cors from 'cors'
+
+// Enable Express compatibility
+enableExpressCompat(vegaa)
+
+// Use Express middleware seamlessly
+vegaa.useExpressMiddleware(helmet())
+vegaa.useExpressMiddleware(cors())
+vegaa.useExpressMiddleware('/api', someMiddleware)
+
+// Your Vegaa routes work exactly as before
+route('/users/:id').get((id) => ({ userId: id }))
+```
+
+**Key Benefits:**
+- ✅ Use existing Express middleware (helmet, cors, morgan, etc.)
+- ✅ Maintains Vegaa's minimal API — no `req`/`res` juggling
+- ✅ Express middleware values flow into Vegaa context automatically
+- ✅ Path-specific middleware support
+- ✅ Error middleware automatically handled
+
+**Example with Real Express Middleware:**
+
+```js
+import { vegaa, route, enableExpressCompat } from 'vegaa'
+import helmet from 'helmet'
+import cors from 'cors'
+import morgan from 'morgan'
+
+enableExpressCompat(vegaa)
+
+// Security headers
+vegaa.useExpressMiddleware(helmet())
+
+// CORS
+vegaa.useExpressMiddleware(cors({ origin: 'https://example.com' }))
+
+// Logging
+vegaa.useExpressMiddleware(morgan('combined'))
+
+// Your routes remain clean and minimal
+route('/api/users').get(() => ({ users: [] }))
+```
+
+**Perfect for:** Migrating from Express, using popular Express middleware, maintaining existing middleware investments.
+
+---
+
 ### 🔥 Response Types
 
 #### JSON (Default)
@@ -479,6 +547,15 @@ route('/path')
 ```js
 vegaa.middleware(middlewareFn)              // Global
 route('/path').middleware(middlewareFn)     // Route-specific
+```
+
+### Express Middleware Compatibility
+```js
+import { enableExpressCompat } from 'vegaa'
+enableExpressCompat(vegaa)
+
+vegaa.useExpressMiddleware(middleware)           // Global
+vegaa.useExpressMiddleware('/path', middleware)  // Path-specific
 ```
 
 ### Starting Server

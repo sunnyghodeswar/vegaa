@@ -285,7 +285,7 @@ export class App {
     const desiredPort =
       typeof port === "number"
         ? port
-        : Number(process.env.PORT || process.env.VEGAA_PORT) || 3000;
+        : Number(process.env.PORT || process.env.VEGAA_PORT) || 4000;
 
     if (cluster.isPrimary && process.env.CLUSTER === "true") {
       const cpus = os.cpus().length;
@@ -348,14 +348,19 @@ export class App {
 export function createApp(opts?: Record<string, any>) {
   const app = new App(opts);
   const callable = ((path: string) => app.call(path)) as App & ((path: string) => RouteBuilder) & {
-    startVegaaServer: (opts?: { port?: number; maxConcurrency?: number }) => Promise<void>;
+    startVegaaServer: (opts?: { port?: number; maxConcurrency?: number; cluster?: boolean }) => Promise<void>;
   };
 
   Object.setPrototypeOf(callable, App.prototype);
   Object.assign(callable, app);
 
-  callable.startVegaaServer = async (opts?: { port?: number; maxConcurrency?: number }) =>
-    app.startServer(opts);
+  callable.startVegaaServer = async (opts?: { port?: number; maxConcurrency?: number; cluster?: boolean }) => {
+    // Set cluster mode from options if provided
+    if (opts?.cluster !== undefined) {
+      process.env.CLUSTER = opts.cluster ? 'true' : 'false'
+    }
+    return app.startServer(opts)
+  };
 
   return callable;
 }

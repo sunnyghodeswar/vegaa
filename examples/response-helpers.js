@@ -1,0 +1,118 @@
+/**
+ * Vegaa Response Helpers Example (Pure JavaScript)
+ * -------------------------------------------------
+ * Demonstrates HTML, text, and JSON responses
+ */
+
+const { vegaa, route, html, text, staticPlugin } = require('../dist/cjs/index.js')
+
+async function main() {
+  // Register static file plugin (optional)
+  await vegaa.plugin(staticPlugin, {
+    root: './public',
+    prefix: '/assets'
+  })
+
+  // HTML response
+  route('/').get(() => {
+    return html(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Vegaa Response Helpers</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              max-width: 800px;
+              margin: 50px auto;
+              padding: 20px;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+            }
+            .card {
+              background: rgba(255, 255, 255, 0.1);
+              padding: 30px;
+              border-radius: 10px;
+              backdrop-filter: blur(10px);
+            }
+            h1 { margin-top: 0; }
+            a { color: white; text-decoration: underline; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h1>🌿 Vegaa Response Helpers</h1>
+            <p>Welcome to Vegaa's response helper examples!</p>
+            <ul>
+              <li><a href="/html">HTML Response</a></li>
+              <li><a href="/text">Text Response</a></li>
+              <li><a href="/json">JSON Response</a></li>
+              <li><a href="/dynamic/123">Dynamic HTML</a></li>
+            </ul>
+          </div>
+        </body>
+      </html>
+    `)
+  })
+
+  // Simple HTML response
+  route('/html').get(() => {
+    return html('<h1>Hello from HTML!</h1><p>This is an HTML response.</p>')
+  })
+
+  // Text response
+  route('/text').get(() => {
+    return text('This is a plain text response')
+  })
+
+  // JSON response (default - just return object)
+  route('/json').get(() => {
+    return {
+      type: 'JSON',
+      message: 'This is a JSON response',
+      timestamp: new Date().toISOString()
+    }
+  })
+
+  // Dynamic HTML with parameters
+  route('/dynamic/:id').get((id) => {
+    return html(`
+      <!DOCTYPE html>
+      <html>
+        <head><title>Dynamic ID: ${id}</title></head>
+        <body style="font-family: Arial; padding: 40px;">
+          <h1>Dynamic Response</h1>
+          <p>ID Parameter: <strong>${id}</strong></p>
+          <a href="/">← Back</a>
+        </body>
+      </html>
+    `)
+  })
+
+  // Conditional response
+  route('/api/:type').get((type) => {
+    if (type === 'html') {
+      return html('<h1>HTML API Response</h1>')
+    }
+    if (type === 'text') {
+      return text('Text API Response')
+    }
+    return { type, message: 'JSON API Response' }
+  })
+
+  // Start server
+  await vegaa.startVegaaServer({ port: 4000 })
+  console.log('✅ Server running on http://localhost:4000')
+  console.log('\n📖 Try these routes:')
+  console.log('  http://localhost:4000/')
+  console.log('  http://localhost:4000/html')
+  console.log('  http://localhost:4000/text')
+  console.log('  http://localhost:4000/json')
+  console.log('  http://localhost:4000/dynamic/123')
+}
+
+main().catch(err => {
+  console.error('💥 Server failed:', err)
+  process.exit(1)
+})
+

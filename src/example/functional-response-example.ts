@@ -225,7 +225,8 @@ async function main() {
 `)
 
   // Start the server
-  await vegaa.startVegaaServer()
+  // Note: Default port is 4000 (can be overridden via PORT env var or port option)
+  await vegaa.startVegaaServer({ port: 4000 })
 }
 
 main().catch((err) => {

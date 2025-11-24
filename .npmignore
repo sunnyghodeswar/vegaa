@@ -1,64 +1,29 @@
-# --------------------------------------------------------
-# 🧱 Vegaa — Clean Publish Configuration
-# --------------------------------------------------------
-# Only `dist/`, `package.json`, `README.md`, and LICENSE
-# will be included when you publish to npm.
-# Everything else stays local.
-# --------------------------------------------------------
-
-# 🚫 Source code (not for npm consumers)
-src/
-example/
+# Source files (keep src/ for TypeScript users, but ignore examples)
+src/example/
 examples/
-tests/
-test/
-__tests__/
-scripts/
-playground/
-tmp/
-drafts/
 
-# 🚫 Local configs & metadata
-tsconfig.json
-tsconfig.build.json
-tsconfig.dev.json
-eslint.config.*
-.eslintrc*
-.prettierrc*
-.prettierignore
-.npmrc
+# Documentation (keep README.md, ignore analysis docs)
+docs/analysis/
+PUBLIC_API_ANALYSIS.md
+
+# Development files
+scripts/
+tsconfig*.json
+*.tgz
+
+# IDE
 .vscode/
 .idea/
-.editorconfig
-.env
-.env.*
 
-# 🚫 Local runtime artifacts
-*.log
-*.pid
-*.seed
-*.tgz
-*.local
-*.bak
-*.swp
-*.DS_Store
+# OS
+.DS_Store
 Thumbs.db
 
-# 🚫 Dependencies
-node_modules/
-coverage/
-dist/**/*.map
+# Tests (if any)
+test/
+tests/
+*.test.ts
+*.spec.ts
 
-# 🚫 Git / build output
-.git/
-.gitignore
-.gitmodules
-
-# 🚫 OS / Tool junk
-.DS_Store
-*.iml
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Build artifacts (keep source maps in dist/ for debugging)
+*.tsbuildinfo

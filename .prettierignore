@@ -1,0 +1,9 @@
+# Ignore build output
+dist/
+node_modules/
+
+# Ignore package files
+*.tgz
+
+# Ignore docs analysis
+docs/analysis/

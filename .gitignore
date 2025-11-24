@@ -61,6 +61,8 @@ Desktop.ini
 coverage/
 .nyc_output/
 coverage-final.json
+*.lcov
+.jest-cache/
 
 # Temp
 tmp/
@@ -105,3 +107,13 @@ docker-compose.override.yml
 
 # Misc
 *.local
+
+# Implementation and development docs (exclude from repo - internal only)
+docs/implementation/
+docs/analysis/
+docs/CLEANUP_SUMMARY.md
+docs/DOCUMENTATION_STRUCTURE.md
+docs/RELEASE_CHECKLIST.md
+
+# Empty directories
+test_docs/

@@ -8,7 +8,7 @@
  *  ✅ Mixed JSON, HTML, and text responses
  */
 
-import { vegaa, route, staticPlugin } from '../index'
+import { vegaa, route, staticPlugin, html, text } from '../index'
 
 async function main() {
   console.log('🚀 Starting Vegaa Static File Example Server...')
@@ -28,9 +28,9 @@ async function main() {
   // 🎨 ROUTES - Demonstrating HTML, Text, and Static File Responses
   // ---------------------------------------------------------------------------
 
-  // 1. Simple HTML response using .html() helper
-  route('/').get((res: any) => {
-    res.html(`
+  // 1. Simple HTML response using functional html() helper
+  route('/').get(() => {
+    return html(`
       <!DOCTYPE html>
       <html>
         <head>
@@ -47,7 +47,7 @@ async function main() {
           <div class="section">
             <h2>Features Demonstrated:</h2>
             <ul>
-              <li>✅ HTML Response Helper</li>
+              <li>✅ HTML Response Helper (Functional Style)</li>
               <li>✅ Static File Serving</li>
               <li>✅ Text Response Helper</li>
               <li>✅ Mixed Response Types</li>
@@ -68,9 +68,9 @@ async function main() {
     `)
   })
 
-  // 2. HTML response with dynamic content
-  route('/html').get((res: any) => {
-    res.html(`
+  // 2. HTML response with dynamic content (functional style)
+  route('/html').get(() => {
+    return html(`
       <!DOCTYPE html>
       <html>
         <head>
@@ -96,14 +96,14 @@ async function main() {
     `)
   })
 
-  // 3. Text response
-  route('/text').get((res: any) => {
-    res.text(`
+  // 3. Text response (functional style)
+  route('/text').get(() => {
+    return text(`
 =================================
 Vegaa Text Response Example
 =================================
 
-This demonstrates the .text() helper method.
+This demonstrates the functional text() helper.
 
 Features:
 - Plain text responses
@@ -128,9 +128,9 @@ Status: ✅ Active
     }
   })
 
-  // 5. Using response helpers in route handlers
-  route('/users/:id').get((id: string, res: any) => {
-    res.html(`
+  // 5. Using functional response helpers with route parameters
+  route('/users/:id').get((id: string) => {
+    return html(`
       <!DOCTYPE html>
       <html>
         <head>
@@ -168,9 +168,9 @@ Status: ✅ Active
     `)
   })
 
-  // 6. Plain text API endpoint
-  route('/api/status').get((res: any) => {
-    res.text('Service is running OK ✅')
+  // 6. Plain text API endpoint (functional style)
+  route('/api/status').get(() => {
+    return text('Service is running OK ✅')
   })
 
   // 7. Send raw HTML with custom headers
@@ -185,12 +185,11 @@ Status: ✅ Active
     // Note: No return needed - res.end() already ended the response
   })
 
-  // 8. Chained helper methods
-  route('/chained').get((res: any) => {
-    res
-      .status(201)
-      .type('text/html')
-      .html('<h1>Chained Response</h1><p>Helper methods can be chained!</p>')
+  // 8. Functional response helper (preferred style)
+  route('/chained').get(() => {
+    // Note: Functional helpers (html, text) are preferred over chaining
+    // For custom status codes, you can still use res.status() before returning
+    return html('<h1>Functional Response</h1><p>Use html() or text() helpers for clean code!</p>')
   })
 
   // ---------------------------------------------------------------------------
@@ -201,14 +200,16 @@ Status: ✅ Active
 📖 USAGE EXAMPLES:
 ------------------
 
-1. Return HTML:
-   route('/page').get((res) => {
-     return res.html('<h1>Hello</h1>')
+1. Return HTML (Functional Style - Recommended):
+   import { html } from 'vegaa'
+   route('/page').get(() => {
+     return html('<h1>Hello</h1>')
    })
 
-2. Return Text:
-   route('/plain').get((res) => {
-     return res.text('Plain text content')
+2. Return Text (Functional Style - Recommended):
+   import { text } from 'vegaa'
+   route('/plain').get(() => {
+     return text('Plain text content')
    })
 
 3. Serve Static Files:
@@ -224,16 +225,18 @@ Status: ✅ Active
    })
 
 5. Mixed Response Types:
-   route('/api/:id').get((id, res) => {
+   import { html } from 'vegaa'
+   route('/api/:id').get((id) => {
      if (id === 'html') {
-       return res.html('<h1>HTML</h1>')
+       return html('<h1>HTML</h1>')
      }
      return { json: 'response' }
    })
 `)
 
   // Start the server
-  await vegaa.startVegaaServer()
+  // Note: Default port is 4000 (can be overridden via PORT env var or port option)
+  await vegaa.startVegaaServer({ port: 4000 })
 }
 
 main().catch((err) => {
