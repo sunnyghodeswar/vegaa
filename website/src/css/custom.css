@@ -1,10 +1,9 @@
 /**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
+ * Vegaa Documentation - Dark Theme Styling
+ * Matching Crashless documentation aesthetic
  */
 
-/* You can override the default Infima variables here. */
+/* Dark theme as default */
 :root {
   --ifm-color-primary: #667eea;
   --ifm-color-primary-dark: #5568d3;
@@ -15,54 +14,191 @@
   --ifm-color-primary-lightest: #a2b2f6;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  
+  /* Dark theme colors */
+  --ifm-background-color: #1a1a1a;
+  --ifm-background-surface-color: #242526;
+  --ifm-font-color-base: #e4e4e7;
+  --ifm-heading-color: #f4f4f5;
+  --ifm-navbar-background-color: #1a1a1a;
+  --ifm-sidebar-background-color: #242526;
+  --ifm-footer-background-color: #1a1a1a;
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
+/* Dark theme */
 [data-theme='dark'] {
-  --ifm-color-primary: #8498f2;
-  --ifm-color-primary-dark: #7a8ff1;
-  --ifm-color-primary-darker: #7285ef;
-  --ifm-color-primary-darkest: #5f72ed;
-  --ifm-color-primary-light: #8ea1f3;
-  --ifm-color-primary-lighter: #98aaf4;
-  --ifm-color-primary-lightest: #acbcf6;
+  --ifm-color-primary: #667eea;
+  --ifm-color-primary-dark: #5568d3;
+  --ifm-color-primary-darker: #4f5fc7;
+  --ifm-color-primary-darkest: #414ea4;
+  --ifm-color-primary-light: #7a8ff1;
+  --ifm-color-primary-lighter: #8498f2;
+  --ifm-color-primary-lightest: #a2b2f6;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  
+  --ifm-background-color: #1a1a1a;
+  --ifm-background-surface-color: #242526;
+  --ifm-font-color-base: #e4e4e7;
+  --ifm-heading-color: #f4f4f5;
+  --ifm-navbar-background-color: #1a1a1a;
+  --ifm-sidebar-background-color: #242526;
+  --ifm-footer-background-color: #1a1a1a;
+  --ifm-hr-border-color: #3f3f46;
+  --ifm-menu-color: #e4e4e7;
+  --ifm-menu-color-active: #667eea;
+  --ifm-menu-color-background-active: rgba(102, 126, 234, 0.1);
+  --ifm-toc-border-color: #3f3f46;
 }
 
-/* Custom styles */
+/* Force dark theme */
+html {
+  --ifm-background-color: #1a1a1a;
+}
+
+/* Navbar styling */
+.navbar {
+  background-color: var(--ifm-navbar-background-color);
+  border-bottom: 1px solid var(--ifm-hr-border-color);
+}
+
+.navbar__logo {
+  height: 32px;
+}
+
+/* Sidebar styling */
+.theme-doc-sidebar-container {
+  background-color: var(--ifm-sidebar-background-color);
+  border-right: 1px solid var(--ifm-hr-border-color);
+}
+
+.menu__link {
+  color: var(--ifm-menu-color);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.menu__link:hover {
+  background-color: rgba(102, 126, 234, 0.1);
+  color: var(--ifm-menu-color-active);
+}
+
+.menu__link--active {
+  background-color: var(--ifm-menu-color-background-active);
+  color: var(--ifm-menu-color-active);
+}
+
+/* Hero section */
 .hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1a1a1a 0%, #242526 100%);
+  border-bottom: 1px solid var(--ifm-hr-border-color);
 }
 
 .hero__title {
   font-size: 3.5rem;
+  color: var(--ifm-heading-color);
 }
 
 .hero__subtitle {
   font-size: 1.5rem;
+  color: var(--ifm-font-color-base);
+}
+
+.hero__description {
+  color: var(--ifm-font-color-base);
+  opacity: 0.9;
 }
 
 /* Code block styling */
 .prism-code {
   border-radius: 8px;
+  background-color: #0d1117 !important;
+  border: 1px solid #30363d;
 }
 
 /* Button styling */
 .button--secondary {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
   color: white;
+  transition: all 0.2s ease;
 }
 
 .button--secondary:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--ifm-color-primary-dark);
+  border-color: var(--ifm-color-primary-dark);
   color: white;
+  transform: translateY(-1px);
 }
 
 .button--outline.button--secondary {
-  border-color: rgba(255, 255, 255, 0.5);
+  background-color: transparent;
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
 }
 
 .button--outline.button--secondary:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--ifm-color-primary);
+  color: white;
+}
+
+/* Content area */
+.main-wrapper {
+  background-color: var(--ifm-background-color);
+}
+
+/* Table of contents */
+.table-of-contents {
+  border-left: 1px solid var(--ifm-toc-border-color);
+}
+
+.table-of-contents__link {
+  color: var(--ifm-font-color-base);
+  opacity: 0.8;
+}
+
+.table-of-contents__link:hover,
+.table-of-contents__link--active {
+  color: var(--ifm-color-primary);
+  opacity: 1;
+}
+
+/* Footer */
+.footer {
+  background-color: var(--ifm-footer-background-color);
+  border-top: 1px solid var(--ifm-hr-border-color);
+}
+
+/* Feature cards */
+.featureCard {
+  background-color: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-hr-border-color);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.featureCard:hover {
+  border-color: var(--ifm-color-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+/* Code example sections */
+.codeExample {
+  background-color: var(--ifm-background-surface-color);
+  border-top: 1px solid var(--ifm-hr-border-color);
+  border-bottom: 1px solid var(--ifm-hr-border-color);
+}
+
+/* Section titles */
+.sectionTitle {
+  color: var(--ifm-heading-color);
+}
+
+/* Links */
+a {
+  color: var(--ifm-color-primary);
+}
+
+a:hover {
+  color: var(--ifm-color-primary-light);
 }

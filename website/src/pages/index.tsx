@@ -11,69 +11,99 @@ import styles from './index.module.css';
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
   return (
-    <header className={clsx('hero hero--primary', styles.heroBanner)}>
+    <header className={clsx('hero', styles.heroBanner)}>
       <div className="container">
         <Heading as="h1" className="hero__title">
-          ⚡ {siteConfig.title}
+          Vegaa Documentation
         </Heading>
-        <p className="hero__subtitle">{siteConfig.tagline}</p>
-        <p className="hero__description">
-          Build fast APIs with zero boilerplate. Automatic parameter injection, 
-          Express middleware compatibility, and pure developer joy.
+        <p className="hero__subtitle">
+          Welcome to Vegaa—a lightning-fast, zero-boilerplate Node.js framework with automatic parameter injection and Express middleware compatibility.
         </p>
-        <div className={styles.buttons}>
-          <Link
-            className="button button--secondary button--lg"
-            to="/docs/getting-started">
-            Get Started →
-          </Link>
-          <Link
-            className="button button--outline button--secondary button--lg"
-            href="https://github.com/sunnyghodeswar/vegaa"
-            style={{marginLeft: '1rem'}}>
-            View on GitHub
-          </Link>
-        </div>
       </div>
     </header>
   );
 }
 
-function FeatureSection() {
+function KeyFeatures() {
   return (
-    <section className={styles.features}>
+    <section className={styles.keyFeatures}>
       <div className="container">
+        <h2 className={styles.sectionTitle}>
+          <span style={{marginRight: '8px'}}>✨</span>
+          Key Features
+        </h2>
         <div className="row">
-          <div className="col col--4">
-            <div className={styles.featureCard}>
-              <div className={styles.featureIcon}>🚀</div>
-              <h3>Lightning Fast</h3>
-              <p>
-                Built on Fastify's core, Vegaa delivers exceptional performance 
-                while maintaining a clean, minimal API.
-              </p>
-            </div>
+          <div className="col col--6">
+            <ul style={{listStyle: 'none', padding: 0}}>
+              <li style={{marginBottom: '1rem', display: 'flex', alignItems: 'flex-start'}}>
+                <span style={{marginRight: '12px', fontSize: '1.2rem'}}>🔒</span>
+                <div>
+                  <strong>Automatic Parameter Injection</strong>
+                  <p style={{margin: '4px 0 0 0', opacity: 0.8}}>No more `req.params.id`—just declare what you need</p>
+                </div>
+              </li>
+              <li style={{marginBottom: '1rem', display: 'flex', alignItems: 'flex-start'}}>
+                <span style={{marginRight: '12px', fontSize: '1.2rem'}}>📊</span>
+                <div>
+                  <strong>Built-in Middleware System</strong>
+                  <p style={{margin: '4px 0 0 0', opacity: 0.8}}>Global and route-specific middleware support</p>
+                </div>
+              </li>
+              <li style={{marginBottom: '1rem', display: 'flex', alignItems: 'flex-start'}}>
+                <span style={{marginRight: '12px', fontSize: '1.2rem'}}>🔗</span>
+                <div>
+                  <strong>Express Middleware Compatibility</strong>
+                  <p style={{margin: '4px 0 0 0', opacity: 0.8}}>Use existing Express middleware seamlessly</p>
+                </div>
+              </li>
+              <li style={{marginBottom: '1rem', display: 'flex', alignItems: 'flex-start'}}>
+                <span style={{marginRight: '12px', fontSize: '1.2rem'}}>🌿</span>
+                <div>
+                  <strong>Zero Dependencies</strong>
+                  <p style={{margin: '4px 0 0 0', opacity: 0.8}}>Minimal core with optional plugins</p>
+                </div>
+              </li>
+            </ul>
           </div>
-          <div className="col col--4">
-            <div className={styles.featureCard}>
-              <div className={styles.featureIcon}>✨</div>
-              <h3>Zero Boilerplate</h3>
-              <p>
-                No more `req.params.id` or `res.json()`. Just declare what you need, 
-                and Vegaa handles the rest.
-              </p>
-            </div>
+          <div className="col col--6">
+            <ul style={{listStyle: 'none', padding: 0}}>
+              <li style={{marginBottom: '1rem', display: 'flex', alignItems: 'flex-start'}}>
+                <span style={{marginRight: '12px', fontSize: '1.2rem'}}>⚡</span>
+                <div>
+                  <strong>Lightning Fast</strong>
+                  <p style={{margin: '4px 0 0 0', opacity: 0.8}}>Built on Fastify's core for maximum performance</p>
+                </div>
+              </li>
+              <li style={{marginBottom: '1rem', display: 'flex', alignItems: 'flex-start'}}>
+                <span style={{marginRight: '12px', fontSize: '1.2rem'}}>🛠️</span>
+                <div>
+                  <strong>Built-in Plugins</strong>
+                  <p style={{margin: '4px 0 0 0', opacity: 0.8}}>CORS, JSON, Body Parser, Static Files, HTTP Client</p>
+                </div>
+              </li>
+              <li style={{marginBottom: '1rem', display: 'flex', alignItems: 'flex-start'}}>
+                <span style={{marginRight: '12px', fontSize: '1.2rem'}}>📦</span>
+                <div>
+                  <strong>Response Helpers</strong>
+                  <p style={{margin: '4px 0 0 0', opacity: 0.8}}>HTML, text, and JSON response utilities</p>
+                </div>
+              </li>
+              <li style={{marginBottom: '1rem', display: 'flex', alignItems: 'flex-start'}}>
+                <span style={{marginRight: '12px', fontSize: '1.2rem'}}>🔒</span>
+                <div>
+                  <strong>Production-Ready</strong>
+                  <p style={{margin: '4px 0 0 0', opacity: 0.8}}>Cluster mode support for multi-core scaling</p>
+                </div>
+              </li>
+            </ul>
           </div>
-          <div className="col col--4">
-            <div className={styles.featureCard}>
-              <div className={styles.featureIcon}>🔗</div>
-              <h3>Express Compatible</h3>
-              <p>
-                Use existing Express middleware seamlessly while keeping Vegaa's 
-                clean, context-based API.
-              </p>
-            </div>
-          </div>
+        </div>
+        <div className={styles.ctaSection} style={{marginTop: '2rem'}}>
+          <Link
+            className="button button--secondary button--lg"
+            to="/docs/getting-started">
+            Try It Live →
+          </Link>
         </div>
       </div>
     </section>
@@ -121,7 +151,10 @@ function QuickStart() {
   return (
     <section className={styles.quickStart}>
       <div className="container">
-        <h2 className={styles.sectionTitle}>Quick Start</h2>
+        <h2 className={styles.sectionTitle}>
+          <span style={{marginRight: '8px'}}>🚀</span>
+          Quick Start
+        </h2>
         <CodeBlock language="bash">
 {`npm install vegaa`}
         </CodeBlock>
@@ -130,13 +163,15 @@ function QuickStart() {
 
 route('/ping').get(() => ({ message: 'pong' }))
 
-await vegaa.startVegaaServer()`}
+await vegaa.startVegaaServer()
+// Server running on http://localhost:4000`}
         </CodeBlock>
         <div className={styles.ctaSection}>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/getting-started">
-            Read Full Guide →
+            to="/docs/examples/basic"
+            style={{marginRight: '1rem'}}>
+            Try Interactive Examples →
           </Link>
         </div>
       </div>
@@ -152,9 +187,9 @@ export default function Home(): ReactNode {
       description="A lightning-fast, zero-boilerplate Node.js framework focused on speed, scalability, and pure developer joy.">
       <HomepageHeader />
       <main>
-        <FeatureSection />
-        <CodeExample />
         <QuickStart />
+        <KeyFeatures />
+        <CodeExample />
       </main>
     </Layout>
   );

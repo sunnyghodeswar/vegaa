@@ -1,5 +1,7 @@
 # Getting Started
 
+🚀 **Quick Start**
+
 Welcome to Vegaa! This guide will help you get up and running in minutes.
 
 ## Installation

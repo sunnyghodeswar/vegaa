@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Vegaa',
   tagline: '⚡ A lightning-fast, zero-boilerplate Node.js framework',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/rocket-icon.png', // Will fallback to favicon.ico if rocket-icon.png doesn't exist
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -53,7 +53,7 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    image: 'img/rocket-icon.png', // Rocket icon for social cards
     colorMode: {
       respectPrefersColorScheme: true,
     },
@@ -61,7 +61,7 @@ const config: Config = {
       title: 'Vegaa',
       logo: {
         alt: 'Vegaa Logo',
-        src: 'img/logo.svg',
+        src: 'img/rocket-icon.png', // Rocket icon - fallback to logo.svg if not found
       },
       items: [
         {
