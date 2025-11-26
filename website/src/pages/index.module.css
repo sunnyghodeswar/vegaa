@@ -89,4 +89,8 @@
 .ctaSection {
   text-align: center;
   margin-top: 2rem;
+  padding: 1rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

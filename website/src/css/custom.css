@@ -1,9 +1,9 @@
 /**
- * Vegaa Documentation - Dark Theme Styling
+ * Vegaa Documentation - Theme Styling
  * Matching Crashless documentation aesthetic
  */
 
-/* Dark theme as default */
+/* Primary color scheme (shared) */
 :root {
   --ifm-color-primary: #667eea;
   --ifm-color-primary-dark: #5568d3;
@@ -13,29 +13,28 @@
   --ifm-color-primary-lighter: #8498f2;
   --ifm-color-primary-lightest: #a2b2f6;
   --ifm-code-font-size: 95%;
+}
+
+/* Light theme */
+:root,
+[data-theme='light'] {
+  --ifm-background-color: #ffffff;
+  --ifm-background-surface-color: #f8f9fa;
+  --ifm-font-color-base: #1c1e21;
+  --ifm-heading-color: #1c1e21;
+  --ifm-navbar-background-color: #ffffff;
+  --ifm-sidebar-background-color: #ffffff;
+  --ifm-footer-background-color: #ffffff;
+  --ifm-hr-border-color: #e4e6eb;
+  --ifm-menu-color: #1c1e21;
+  --ifm-menu-color-active: #667eea;
+  --ifm-menu-color-background-active: rgba(102, 126, 234, 0.1);
+  --ifm-toc-border-color: #e4e6eb;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
-  
-  /* Dark theme colors */
-  --ifm-background-color: #1a1a1a;
-  --ifm-background-surface-color: #242526;
-  --ifm-font-color-base: #e4e4e7;
-  --ifm-heading-color: #f4f4f5;
-  --ifm-navbar-background-color: #1a1a1a;
-  --ifm-sidebar-background-color: #242526;
-  --ifm-footer-background-color: #1a1a1a;
 }
 
 /* Dark theme */
 [data-theme='dark'] {
-  --ifm-color-primary: #667eea;
-  --ifm-color-primary-dark: #5568d3;
-  --ifm-color-primary-darker: #4f5fc7;
-  --ifm-color-primary-darkest: #414ea4;
-  --ifm-color-primary-light: #7a8ff1;
-  --ifm-color-primary-lighter: #8498f2;
-  --ifm-color-primary-lightest: #a2b2f6;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
-  
   --ifm-background-color: #1a1a1a;
   --ifm-background-surface-color: #242526;
   --ifm-font-color-base: #e4e4e7;
@@ -48,11 +47,7 @@
   --ifm-menu-color-active: #667eea;
   --ifm-menu-color-background-active: rgba(102, 126, 234, 0.1);
   --ifm-toc-border-color: #3f3f46;
-}
-
-/* Force dark theme */
-html {
-  --ifm-background-color: #1a1a1a;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
 /* Navbar styling */
@@ -89,8 +84,12 @@ html {
 
 /* Hero section */
 .hero {
-  background: linear-gradient(135deg, #1a1a1a 0%, #242526 100%);
+  background: linear-gradient(135deg, var(--ifm-background-color) 0%, var(--ifm-background-surface-color) 100%);
   border-bottom: 1px solid var(--ifm-hr-border-color);
+}
+
+[data-theme='dark'] .hero {
+  background: linear-gradient(135deg, #1a1a1a 0%, #242526 100%);
 }
 
 .hero__title {
@@ -111,11 +110,35 @@ html {
 /* Code block styling */
 .prism-code {
   border-radius: 8px;
+}
+
+[data-theme='dark'] .prism-code {
   background-color: #0d1117 !important;
   border: 1px solid #30363d;
 }
 
+[data-theme='light'] .prism-code {
+  background-color: #f6f8fa !important;
+  border: 1px solid #d0d7de;
+}
+
 /* Button styling */
+.button--primary {
+  background-color: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+  color: white;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.button--primary:hover {
+  background-color: var(--ifm-color-primary-dark);
+  border-color: var(--ifm-color-primary-dark);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
 .button--secondary {
   background-color: var(--ifm-color-primary);
   border-color: var(--ifm-color-primary);

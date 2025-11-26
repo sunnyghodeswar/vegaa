@@ -14,11 +14,37 @@ function HomepageHeader() {
     <header className={clsx('hero', styles.heroBanner)}>
       <div className="container">
         <Heading as="h1" className="hero__title">
-          Vegaa Documentation
+          <img
+            src="/vegaa/img/rocket-icon.png"
+            alt="Vegaa Rocket"
+            style={{
+              height: '60px',
+              width: '60px',
+              marginRight: '15px',
+              verticalAlign: 'middle',
+              display: 'inline-block'
+            }}
+          />
+          {siteConfig.title}
         </Heading>
-        <p className="hero__subtitle">
-          Welcome to Vegaa—a lightning-fast, zero-boilerplate Node.js framework with automatic parameter injection and Express middleware compatibility.
+        <p className="hero__subtitle">{siteConfig.tagline}</p>
+        <p className="hero__description">
+          Build fast APIs with zero boilerplate. Automatic parameter injection,
+          Express middleware compatibility, and pure developer joy.
         </p>
+        <div className={styles.buttons}>
+          <Link
+            className="button button--secondary button--lg"
+            to="/docs/getting-started">
+            Get Started →
+          </Link>
+          <Link
+            className="button button--outline button--secondary button--lg"
+            href="https://github.com/sunnyghodeswar/vegaa"
+            style={{marginLeft: '1rem'}}>
+            View on GitHub
+          </Link>
+        </div>
       </div>
     </header>
   );
