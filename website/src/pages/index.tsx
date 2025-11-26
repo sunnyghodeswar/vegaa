@@ -108,7 +108,7 @@ function CodeExample() {
         <div className={styles.ctaSection}>
           <Link
             className="button button--primary button--lg"
-            to="/docs/examples">
+            to="/docs/examples/basic">
             Explore Examples →
           </Link>
         </div>

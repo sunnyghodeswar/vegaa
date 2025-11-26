@@ -98,7 +98,7 @@ const config: Config = {
             },
             {
               label: 'Examples',
-              to: '/docs/examples',
+              to: '/docs/examples/basic',
             },
           ],
         },

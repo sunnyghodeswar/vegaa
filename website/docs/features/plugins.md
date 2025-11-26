@@ -129,5 +129,5 @@ await vegaa.plugin(jsonPlugin)
 ## Next Steps
 
 - See [HTTP Client Example](/docs/examples/http-client)
-- Explore [All Examples](/docs/examples)
+- Explore [All Examples](/docs/examples/basic)
 

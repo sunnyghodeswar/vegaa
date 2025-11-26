@@ -124,6 +124,6 @@ vegaa.middleware((params) => {
 
 ## Next Steps
 
-- Explore [Examples](/docs/examples)
+- Explore [Examples](/docs/examples/basic)
 - Learn about [Express Compatibility](/docs/features/express-compatibility)
 
