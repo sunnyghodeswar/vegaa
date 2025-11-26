@@ -13,6 +13,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/sunnyghodeswar/vegaa?style=social)](https://github.com/sunnyghodeswar/vegaa)
 [![GitHub issues](https://img.shields.io/github/issues/sunnyghodeswar/vegaa)](https://github.com/sunnyghodeswar/vegaa/issues)
+[![Documentation](https://img.shields.io/badge/Documentation-Visit%20Docs-blue)](https://sunnyghodeswar.github.io/vegaa/)
+
+<div align="center">
+
+**[📚 Full Documentation →](https://sunnyghodeswar.github.io/vegaa/)** | **[🚀 Quick Start](#-quick-start)** | **[💡 Examples](https://sunnyghodeswar.github.io/vegaa/docs/examples/basic)** | **[🔗 Express Compatibility](#-express-middleware-compatibility)**
+
+</div>
 
 ---
 
@@ -22,12 +29,17 @@
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
 - [Core Concepts](#-core-concepts)
+  - [Automatic Parameter Injection](#1-automatic-parameter-injection)
+  - [Smart Parameter Grouping](#2-smart-parameter-grouping)
 - [Express Middleware Compatibility](#-express-middleware-compatibility)
 - [Middleware System](#-middleware-system)
+  - [Global Middleware](#global-middleware)
+  - [Route-Specific Middleware](#route-specific-middleware)
 - [Built-in Plugins](#-built-in-plugins)
 - [Features](#-features)
 - [Performance](#-performance)
 - [CLI & Templates](#-cli--templates)
+- [Documentation](#-documentation)
 - [Links & Resources](#-links--resources)
 
 ---
@@ -74,6 +86,8 @@ route('/users/:id').get((id) => ({ userId: id }))  // Still clean!
 
 ## 📦 Installation
 
+📚 **[Installation Guide →](https://sunnyghodeswar.github.io/vegaa/docs/getting-started#installation)**
+
 ### Option 1: Start with Templates (Recommended)
 
 Get started instantly with pre-configured templates:
@@ -97,6 +111,8 @@ npm install vegaa
 ---
 
 ## 🚀 Quick Start
+
+📚 **[Full Getting Started Guide →](https://sunnyghodeswar.github.io/vegaa/docs/getting-started)**
 
 Create your first API in under 30 seconds:
 
@@ -123,6 +139,8 @@ That's it! You just built your first API endpoint.
 ---
 
 ## 💡 Core Concepts
+
+📚 **[Learn more about Core Concepts →](https://sunnyghodeswar.github.io/vegaa/docs/core-concepts/overview)**
 
 ### 1. Automatic Parameter Injection
 
@@ -163,6 +181,8 @@ route('/users/:id').post((params, body) => {
 ---
 
 ## 🔗 Middleware System
+
+📚 **[Learn more about Middleware →](https://sunnyghodeswar.github.io/vegaa/docs/core-concepts/middleware)**
 
 Middleware is the heart of Vegaa — it creates reusable logic that flows through your app.
 
@@ -228,6 +248,8 @@ route('/welcome')
 
 ## 🔌 Built-in Plugins
 
+📚 **[Learn more about Plugins →](https://sunnyghodeswar.github.io/vegaa/docs/features/plugins)**
+
 Vegaa comes with powerful plugins that are loaded by default:
 
 ### Default Plugins (Pre-loaded)
@@ -288,6 +310,8 @@ await vegaa.plugin(loggerPlugin)
 ## ✨ Features
 
 ### 🔌 Express Middleware Compatibility
+
+📚 **[Learn more about Express Compatibility →](https://sunnyghodeswar.github.io/vegaa/docs/features/express-compatibility)**
 
 Use any Express middleware with Vegaa's minimal API — no compromises:
 
@@ -603,13 +627,26 @@ Senior Full-Stack Developer • Pune, India 🇮🇳
 
 ---
 
+## 📚 Documentation
+
+**📖 [Visit the Full Documentation Website →](https://sunnyghodeswar.github.io/vegaa/)**
+
+The documentation includes:
+- 📘 Getting Started Guide
+- 💡 Core Concepts & Examples  
+- 🔧 Complete API Reference
+- 🎯 Interactive Examples with Stackblitz
+- 🚀 Advanced Features & Best Practices
+
+---
+
 ## 🔗 Links & Resources
 
 - **[⭐ GitHub Repository](https://github.com/sunnyghodeswar/vegaa)** - Star us!
 - **[📦 npm Package](https://www.npmjs.com/package/vegaa)** - Install Vegaa
+- **[📚 Documentation Website](https://sunnyghodeswar.github.io/vegaa/)** - Full documentation with examples
 - **[🧰 CLI Tool](https://www.npmjs.com/package/vegaa-cli)** - Project templates
 - **[🐛 Report Issues](https://github.com/sunnyghodeswar/vegaa/issues)** - Bug reports & features
-- **[📖 Documentation](https://github.com/sunnyghodeswar/vegaa/wiki)** - Full docs
 
 ---
 
@@ -619,6 +656,6 @@ Senior Full-Stack Developer • Pune, India 🇮🇳
 
 Built with ❤️ by developers, for developers.
 
-[Get Started](#-installation) | [View Templates](#-cli--templates) | [Star on GitHub](https://github.com/sunnyghodeswar/vegaa) ⭐
+[Get Started](#-installation) | [Documentation](https://sunnyghodeswar.github.io/vegaa/) | [View Templates](#-cli--templates) | [Star on GitHub](https://github.com/sunnyghodeswar/vegaa) ⭐
 
 </div>

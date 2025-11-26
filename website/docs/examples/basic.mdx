@@ -1,0 +1,68 @@
+# Basic Example
+
+A simple example demonstrating Vegaa's core features.
+
+## Code
+
+```js
+import { vegaa, route } from 'vegaa'
+
+// Simple route
+route('/ping').get(() => {
+  return { message: 'pong' }
+})
+
+// Route with parameters
+route('/users/:id').get((id) => {
+  return { userId: id, name: `User ${id}` }
+})
+
+// Start server
+async function main() {
+  await vegaa.startVegaaServer({ port: 4000 })
+  console.log('✅ Server running on http://localhost:4000')
+}
+
+main().catch(err => {
+  console.error('💥 Server failed:', err)
+  process.exit(1)
+})
+```
+
+## Try It
+
+import StackblitzButton from '@site/src/components/StackblitzButton';
+
+<StackblitzButton file="examples/basic.js" title="Open Basic Example in Stackblitz" />
+
+## What's Happening
+
+1. **Simple Route** - `/ping` returns a JSON response
+2. **Route Parameters** - `/users/:id` extracts the `id` parameter automatically
+3. **Server Start** - `startVegaaServer()` starts the server on port 4000
+
+## Test It
+
+```bash
+# Start the server
+node basic.js
+
+# Test the endpoints
+curl http://localhost:4000/ping
+# {"message":"pong"}
+
+curl http://localhost:4000/users/123
+# {"userId":"123","name":"User 123"}
+```
+
+## Key Concepts
+
+- **Automatic Parameter Injection** - `id` is automatically extracted from the route
+- **JSON Responses** - Just return an object, Vegaa handles the rest
+- **Simple API** - No `req`/`res` boilerplate
+
+## Next Steps
+
+- Try the [CRUD Example](/docs/examples/crud)
+- Learn about [Parameter Injection](/docs/core-concepts/parameter-injection)
+

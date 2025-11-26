@@ -1,0 +1,105 @@
+# Express Middleware Example
+
+Demonstrates using Express middleware with Vegaa's minimal API.
+
+## Code
+
+```js
+import { vegaa, route, enableExpressCompat, html } from 'vegaa'
+
+async function main() {
+  // Enable Express compatibility
+  enableExpressCompat(vegaa)
+  console.log('✅ Express compatibility enabled')
+
+  // Example 1: Simple Express middleware (logging)
+  vegaa.useExpressMiddleware((req, res, next) => {
+    console.log(`📝 [Express MW] ${req.method} ${req.url}`)
+    req.requestTime = new Date().toISOString()
+    next()
+  })
+
+  // Example 2: Express middleware with path prefix
+  vegaa.useExpressMiddleware('/api', (req, res, next) => {
+    req.apiVersion = 'v1'
+    console.log(`🔌 [API Middleware] API Version: ${req.apiVersion}`)
+    next()
+  })
+
+  // Example 3: Express middleware that modifies response
+  vegaa.useExpressMiddleware((req, res, next) => {
+    res.setHeader('X-Powered-By', 'Vegaa')
+    next()
+  })
+
+  // Example 4: Async Express middleware
+  vegaa.useExpressMiddleware(async (req, res, next) => {
+    await new Promise(resolve => setTimeout(resolve, 10))
+    req.asyncData = { loaded: true, timestamp: Date.now() }
+    next()
+  })
+
+  // Vegaa routes - Express middleware properties available via context
+  route('/').get((requestTime, asyncData) => {
+    return html(`
+      <!DOCTYPE html>
+      <html>
+        <head><title>Express Middleware Demo</title></head>
+        <body>
+          <h1>Express Middleware Integration</h1>
+          <p>Request Time: ${requestTime}</p>
+          <p>Async Data: ${JSON.stringify(asyncData)}</p>
+        </body>
+      </html>
+    `)
+  })
+
+  route('/api/users').get((apiVersion) => {
+    return {
+      version: apiVersion,
+      users: [{ id: 1, name: 'John' }]
+    }
+  })
+
+  // Start server
+  await vegaa.startVegaaServer({ port: 4000 })
+  console.log('✅ Server running on http://localhost:4000')
+}
+
+main().catch(err => {
+  console.error('💥 Server failed:', err)
+  process.exit(1)
+})
+```
+
+## Try It
+
+import StackblitzButton from '@site/src/components/StackblitzButton';
+
+<StackblitzButton file="examples/express-middleware.js" title="Open Express Middleware Example in Stackblitz" />
+
+## Using Real Express Middleware
+
+If you have Express packages installed, you can use them:
+
+```js
+import helmet from 'helmet'
+import cors from 'cors'
+
+enableExpressCompat(vegaa)
+vegaa.useExpressMiddleware(helmet())
+vegaa.useExpressMiddleware(cors())
+```
+
+## Key Concepts
+
+- **Express Compatibility** - Use existing Express middleware
+- **Context Integration** - Express `req` properties become available in Vegaa routes
+- **Path-Specific** - Apply middleware to specific paths
+- **Clean API** - Keep Vegaa's minimal API while using Express middleware
+
+## Next Steps
+
+- Learn about [Express Compatibility](/docs/features/express-compatibility)
+- Try the [Response Helpers Example](/docs/examples/response-helpers)
+

@@ -88,7 +88,7 @@ function wrapExpressMiddleware(fn: ExpressMiddleware, app: App): (ctx: Context) 
     }
 
     // Override res.end to detect response completion
-    res.end = function (chunk?: any, encoding?: any, cb?: any) {
+    res.end = function (chunk?: any, encoding?: any, cb?: any): any {
       originalEnd.call(this, chunk, encoding, cb)
       if (!resolved && !nextCalled) {
         // Response ended, sync back to context
@@ -96,6 +96,7 @@ function wrapExpressMiddleware(fn: ExpressMiddleware, app: App): (ctx: Context) 
         resolved = true
         cleanup()
       }
+      return this
     }
 
     // Event-based response monitoring

@@ -1,0 +1,68 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #667eea;
+  --ifm-color-primary-dark: #5568d3;
+  --ifm-color-primary-darker: #4f5fc7;
+  --ifm-color-primary-darkest: #414ea4;
+  --ifm-color-primary-light: #7a8ff1;
+  --ifm-color-primary-lighter: #8498f2;
+  --ifm-color-primary-lightest: #a2b2f6;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #8498f2;
+  --ifm-color-primary-dark: #7a8ff1;
+  --ifm-color-primary-darker: #7285ef;
+  --ifm-color-primary-darkest: #5f72ed;
+  --ifm-color-primary-light: #8ea1f3;
+  --ifm-color-primary-lighter: #98aaf4;
+  --ifm-color-primary-lightest: #acbcf6;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Custom styles */
+.hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.hero__title {
+  font-size: 3.5rem;
+}
+
+.hero__subtitle {
+  font-size: 1.5rem;
+}
+
+/* Code block styling */
+.prism-code {
+  border-radius: 8px;
+}
+
+/* Button styling */
+.button--secondary {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.button--secondary:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.button--outline.button--secondary {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.button--outline.button--secondary:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

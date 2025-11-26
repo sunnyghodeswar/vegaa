@@ -5,6 +5,9 @@ node_modules/
 
 # Build output
 dist/
+website/node_modules/
+website/.docusaurus/
+website/build/
 build/
 out/
 lib/

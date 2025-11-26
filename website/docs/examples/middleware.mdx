@@ -1,0 +1,90 @@
+# Middleware Example
+
+Demonstrates global and route-specific middleware.
+
+## Code
+
+```js
+import { vegaa, route } from 'vegaa'
+
+// Global middleware - runs for all routes
+vegaa.middleware(async () => {
+  return { 
+    user: { id: 1, name: 'John Doe' },
+    timestamp: new Date().toISOString()
+  }
+})
+
+// Chained middleware
+vegaa.middleware([
+  async () => ({ appName: 'Vegaa Demo' }),
+  async (appName) => ({ greeting: `Welcome to ${appName}!` })
+])
+
+// Route with middleware injection
+route('/profile').get((user, greeting) => {
+  return {
+    message: greeting,
+    user,
+    page: 'Profile'
+  }
+})
+
+// Route-specific middleware
+route('/admin/:id')
+  .middleware((params) => {
+    if (params.id !== '1') {
+      throw new Error('Unauthorized')
+    }
+    return { access: 'granted', role: 'admin' }
+  })
+  .get((id, user, access, role) => {
+    return {
+      adminId: id,
+      user,
+      access,
+      role
+    }
+  })
+
+// Start server
+async function main() {
+  await vegaa.startVegaaServer({ port: 4000 })
+  console.log('✅ Server running on http://localhost:4000')
+}
+
+main().catch(err => {
+  console.error('💥 Server failed:', err)
+  process.exit(1)
+})
+```
+
+## Try It
+
+import StackblitzButton from '@site/src/components/StackblitzButton';
+
+<StackblitzButton file="examples/middleware.js" title="Open Middleware Example in Stackblitz" />
+
+## Test It
+
+```bash
+# Access profile (uses global middleware)
+curl http://localhost:4000/profile
+
+# Access admin route (uses route-specific middleware)
+curl http://localhost:4000/admin/1  # ✅ Works
+curl http://localhost:4000/admin/2  # ❌ Unauthorized
+```
+
+## Key Concepts
+
+- **Global Middleware** - Applies to all routes
+- **Chained Middleware** - Middleware can depend on previous middleware values
+- **Route-Specific Middleware** - Applied only to specific routes
+- **Error Throwing** - Throw errors to stop request processing
+
+## Next Steps
+
+- Try the [Express Middleware Example](/docs/examples/express-middleware)
+- Learn about [Middleware](/docs/core-concepts/middleware)
+
