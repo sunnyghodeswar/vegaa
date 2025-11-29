@@ -6,7 +6,6 @@
 
 # Vegaa
 
-
 **A modern Node.js framework that makes backend development simple and fast**
 
 [![npm version](https://badge.fury.io/js/vegaa.svg)](https://www.npmjs.com/package/vegaa)
@@ -236,11 +235,10 @@ vegaa.middleware([
   async (user, greeting) => ({ log: `${greeting} [User ${user.id}]` })
 ])
 route('/welcome')
-.middleware(async (user, greeting) => ({ log: `${greeting} [User ${user.id}]` }))
-.middleware(async (log) => ({ timestamp: new Date().toISOString() })) 
-.get((greeting, log, timestamp) => { return { greeting, log, timestamp } }) 
-})
-```    
+  .middleware(async (user, greeting) => ({ log: `${greeting} [User ${user.id}]` }))
+  .middleware(async (log) => ({ timestamp: new Date().toISOString() }))
+  .get((greeting, log, timestamp) => ({ greeting, log, timestamp }))
+```
 
 **Key Concept:** Each middleware receives values from previous middleware automatically. Think of it as a pipeline where data flows downstream.
 
@@ -430,7 +428,7 @@ route('/info').get((version) => ({ version }))
 Use all CPU cores automatically:
 
 ```js
-await vegaa.startVegaaServer({ 
+await vegaa.startVegaaServer({
   port: 4000,
   cluster: true  // Enable multi-core mode
 })
@@ -446,17 +444,17 @@ Here's everything working together with **route chaining**:
 import { vegaa, route, html } from 'vegaa'
 
 // Global auth middleware
-vegaa.middleware(async () => ({ 
-  user: { id: 1, name: 'Alice' } 
+vegaa.middleware(async () => ({
+  user: { id: 1, name: 'Alice' }
 }))
 
 // Multiple routes with method chaining
 route('/users/:id')
   .get((id, user) => ({ viewerId: user.id, profileId: id }))
-  .post((params, body, user) => ({ 
-    created: true, 
-    data: body, 
-    authorId: user.id 
+  .post((params, body, user) => ({
+    created: true,
+    data: body,
+    authorId: user.id
   }))
   .delete((id) => ({ deleted: true, userId: id }))
 
@@ -482,7 +480,7 @@ Vegaa is **built for speed** while maintaining clean code.
 
 ### Benchmark Results
 
-**Test Environment:** MacBook M3, macOS 26, Node v24.3  
+**Test Environment:** MacBook M3, macOS 26, Node v24.3
 **Tool:** `autocannon -c 100 -d 300 http://localhost:4000/ping`
 
 | Framework | Requests/sec | Latency | Notes |
@@ -584,9 +582,9 @@ vegaa.useExpressMiddleware('/path', middleware)  // Path-specific
 
 ### Starting Server
 ```js
-await vegaa.startVegaaServer({ 
+await vegaa.startVegaaServer({
   port: 4000,
-  cluster: false 
+  cluster: false
 })
 ```
 
@@ -614,7 +612,7 @@ Contributions welcome! Fork the repo, make changes, and submit a PR.
 
 ## 👨‍💻 Author
 
-**Sunny Ghodeswar**  
+**Sunny Ghodeswar**
 Senior Full-Stack Developer • Pune, India 🇮🇳
 
 [GitHub](https://github.com/sunnyghodeswar) • [npm](https://www.npmjs.com/~sunnyghodeswar)
@@ -633,7 +631,7 @@ Senior Full-Stack Developer • Pune, India 🇮🇳
 
 The documentation includes:
 - 📘 Getting Started Guide
-- 💡 Core Concepts & Examples  
+- 💡 Core Concepts & Examples
 - 🔧 Complete API Reference
 - 🎯 Interactive Examples with Stackblitz
 - 🚀 Advanced Features & Best Practices
